@@ -1,0 +1,10 @@
+# The study's upload service (Cloudflare Worker). Deployed by .github/workflows/deploy.yml.
+name = "quantacolony-study-upload"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+[vars]
+RESULTS_REPO = "Anava13/quantacolony-study-results"
+ALLOWED_ORIGINS = "https://anava13.github.io"
+# RESULTS_TOKEN is a secret, set by the deploy workflow from the repository secret of the same name.

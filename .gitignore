@@ -1,0 +1,9 @@
+# built or local only
+python.zip
+config.js
+pyodide-local
+_site/
+__pycache__/
+*.pyc
+node_modules/
+.wrangler/

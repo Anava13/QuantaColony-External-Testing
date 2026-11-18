@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "plates": [
+    {
+      "name": "practice",
+      "file": "practice.png",
+      "role": "practice",
+      "px_per_mm": 10.518305007782885,
+      "dish": [
+        462.39666666666665,
+        462.39666666666665,
+        465.49999999999994
+      ]
+    },
+    {
+      "name": "study_01",
+      "file": "study_01.png",
+      "role": "scored",
+      "px_per_mm": 10.556642771246176,
+      "dish": [
+        456.43666666666667,
+        456.43666666666667,
+        459.5
+      ]
+    },
+    {
+      "name": "study_02",
+      "file": "study_02.png",
+      "role": "scored",
+      "px_per_mm": 10.511586944946982,
+      "dish": [
+        459.5,
+        456.43666666666667,
+        459.5
+      ]
+    },
+    {
+      "name": "study_03",
+      "file": "study_03.png",
+      "role": "scored",
+      "px_per_mm": 10.556642771246176,
+      "dish": [
+        456.43666666666667,
+        456.43666666666667,
+        459.5
+      ]
+    },
+    {
+      "name": "study_04",
+      "file": "study_04.png",
+      "role": "scored",
+      "px_per_mm": 10.518305007782885,
+      "dish": [
+        462.39666666666665,
+        462.39666666666665,
+        465.49999999999994
+      ]
+    },
+    {
+      "name": "study_05",
+      "file": "study_05.png",
+      "role": "scored",
+      "px_per_mm": 11.130796146290688,
+      "dish": null
+    },
+    {
+      "name": "study_06",
+      "file": "study_06.png",
+      "role": "scored",
+      "px_per_mm": 10.835803960182872,
+      "dish": null
+    }
+  ],
+  "target": {
+    "colony_ids": [
+      5,
+      6,
+      7
+    ],
+    "center": [
+      320.4490950226244,
+      465.2024886877828
+    ],
+    "radius": 24.639020608495734
+  },
+  "concepts": [
+    {
+      "file": "mass_three.png",
+      "title": "A mass of three touching colonies",
+      "caption": "Measure three colonies, each with its own outline. One outline around the whole mass counts one colony of the wrong size."
+    },
+    {
+      "file": "mass_two.png",
+      "title": "Two touching colonies",
+      "caption": "Two colonies, two outlines, even where they overlap deeply."
+    },
+    {
+      "file": "edge.png",
+      "title": "Where the edge is",
+      "caption": "A colony's outline follows its outer edge, including the pale margin around the dark center."
+    }
+  ]
+}

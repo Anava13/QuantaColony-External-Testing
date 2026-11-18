@@ -1,0 +1,58 @@
+{
+  "study_version": 1,
+  "bundle_version": 1,
+  "questions": [
+    [
+      "background",
+      "Science background",
+      [
+        "None",
+        "Coursework only",
+        "Works in a lab"
+      ]
+    ],
+    [
+      "experience",
+      "Experience measuring colonies",
+      [
+        "Never",
+        "By hand (ruler or ImageJ)",
+        "With colony software"
+      ]
+    ],
+    [
+      "used_before",
+      "Used QuantaColony before",
+      [
+        "No",
+        "Yes"
+      ]
+    ],
+    [
+      "device",
+      "Pointing device for this session",
+      [
+        "Mouse",
+        "Trackpad"
+      ]
+    ]
+  ],
+  "goal": "Draw one outline for every colony, on the colony's outer edge. Touching colonies are separate colonies: a mass of three touching colonies is three colonies, each with its own outline. Some plates show part of a dish: measure every colony in view, including colonies cut by the edge.",
+  "concepts": [
+    {
+      "file": "assets/concepts/mass_three.png",
+      "title": "A mass of three touching colonies",
+      "caption": "Measure three colonies, each with its own outline. One outline around the whole mass counts one colony of the wrong size."
+    },
+    {
+      "file": "assets/concepts/mass_two.png",
+      "title": "Two touching colonies",
+      "caption": "Two colonies, two outlines, even where they overlap deeply."
+    },
+    {
+      "file": "assets/concepts/edge.png",
+      "title": "Where the edge is",
+      "caption": "A colony's outline follows its outer edge, including the pale margin around the dark center."
+    }
+  ]
+}

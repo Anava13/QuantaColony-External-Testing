@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuantaColony study</title>
+<link rel="icon" href="assets/favicon.svg">
+<link rel="stylesheet" href="app/style.css">
+<script src="config.js"></script>
+</head>
+<body>
+<header id="bar">
+  <img src="assets/logo.svg" alt="" class="logo">
+  <span class="wordmark">QuantaColony</span><span class="crumb">study</span>
+  <span class="spacer"></span>
+  <span id="plate-label" class="plate-label"></span>
+  <span class="spacer"></span>
+  <button id="btn-undo" class="ghost hidden" title="Undo (Ctrl+Z)">↶ Undo</button>
+  <button id="btn-redo" class="ghost hidden" title="Redo (Ctrl+Y)">↷ Redo</button>
+  <button id="btn-finish" class="primary hidden" title="Save this plate and open the next one">✓ Finish image</button>
+  <button id="btn-info" class="ghost">What is this for?</button>
+</header>
+
+<main>
+  <!-- Participant form -->
+  <section id="screen-form" class="page hidden">
+    <div class="column">
+      <h1>Before you start</h1>
+      <p class="lead">This study tests whether different people measure the same colonies the same way with
+        QuantaColony. It takes about 15 minutes: a short guide, one practice plate, then six plates. Your
+        measurements, how long each step took and these answers are sent automatically at the end.</p>
+      <label class="field" for="name">Your name</label>
+      <input id="name" type="text" autocomplete="off" placeholder="Any name that tells you apart from other participants">
+      <div id="questions"></div>
+      <p id="form-problems" class="small"></p>
+      <button id="btn-start" class="primary" disabled>Start</button>
+      <p id="load-note" class="small"></p>
+    </div>
+  </section>
+
+  <!-- What to measure -->
+  <section id="screen-concepts" class="page hidden">
+    <div class="column">
+      <h1>What to measure</h1>
+      <p id="goal" class="lead"></p>
+      <div id="concepts"></div>
+      <p class="lead">Next, a practice plate with a guide beside it shows where each tool is.</p>
+      <button id="btn-practice" class="primary">Start the practice plate</button>
+    </div>
+  </section>
+
+  <!-- Colony Detection -->
+  <section id="screen-detect" class="hidden">
+    <aside id="left">
+      <div class="group-title">Step 1 · Automatic detection</div>
+      <button class="mode" id="mode-ModifyGlobalParameters" data-mode="ModifyGlobalParameters"><span>Detect automatically</span><kbd>1</kbd></button>
+      <div class="group-title">Step 2 · Manual correction</div>
+      <button class="mode" id="mode-DeleteIndividualColonies" data-mode="DeleteIndividualColonies"><span>Delete colonies</span><kbd>2</kbd></button>
+      <button class="mode" id="mode-DeleteManyColonies" data-mode="DeleteManyColonies"><span>Delete a region</span><kbd>3</kbd></button>
+      <button class="mode" id="mode-AddIndividualColonies" data-mode="AddIndividualColonies"><span>Add colonies</span><kbd>4</kbd></button>
+      <button class="mode" id="mode-AddManyColonies" data-mode="AddManyColonies"><span>Detect in a region</span><kbd>5</kbd></button>
+
+      <div id="panel-settings" class="panel">
+        <div class="ctl-title">Colony shape</div>
+        <div class="seg" id="ctl-shape"><button data-v="Irregular">Irregular</button><button data-v="Circular">Circular</button></div>
+        <div class="ctl-title">Colony color</div>
+        <div class="seg" id="ctl-color"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+        <div class="ctl" id="ctl-threshold"><label>Brightness threshold <output></output></label><input type="range" min="0.01" max="0.99" step="0.01" data-field="threshold"></div>
+        <p class="hint">Pixels at or below this brightness (0 black, 1 white) count as colony.</p>
+        <div class="ctl" id="ctl-sense"><label>Sensitivity <output></output></label><input type="range" min="0.01" max="1" step="0.005" data-field="sense"></div>
+        <div class="ctl-row">
+          <div class="ctl small-ctl"><label>Min radius (px)</label><input type="number" min="1" max="100" step="1" data-field="rmin"></div>
+          <div class="ctl small-ctl"><label>Max radius (px)</label><input type="number" min="0" max="200" step="1" data-field="rmax"></div>
+        </div>
+        <div class="ctl small-ctl"><label>Largest object (px)</label><input type="number" min="0" max="10000" step="250" data-field="maxpix"></div>
+        <label class="switch" id="ctl-split"><input type="checkbox" data-field="split"><span>Split touching colonies</span></label>
+        <div id="split-rows">
+          <div class="ctl"><label>Split above elongation <output></output></label><input type="range" min="0.05" max="0.99" step="0.05" data-field="split_elongation"></div>
+          <div class="ctl"><label>Minimum pinch <output></output></label><input type="range" min="0.05" max="0.9" step="0.05" data-field="split_pinch"></div>
+        </div>
+        <button id="btn-estimate">Estimate settings</button>
+      </div>
+      <div id="panel-delete" class="panel hidden">
+        <p class="hint">Click outlines to select them, then delete.</p>
+        <button id="btn-delete" class="danger">Delete colonies (Del)</button>
+        <button class="btn-clear">Clear selection (Esc)</button>
+      </div>
+      <div id="panel-delete-region" class="panel hidden">
+        <p class="hint">Drag a box over outlines to select them, then delete.</p>
+        <button id="btn-delete-region" class="danger">Delete colonies (Del)</button>
+        <button class="btn-clear">Clear box (Esc)</button>
+      </div>
+      <div id="panel-add" class="panel hidden">
+        <p class="hint">Drag across a colony from edge to edge. Drag a circle's middle to move it, its edge to
+          resize it; right-click removes it.</p>
+        <label class="switch"><input type="checkbox" id="ctl-contour"><span>Snap to colony edge</span></label>
+        <button id="btn-add" class="primary">Add colonies (Enter)</button>
+        <button class="btn-clear">Clear circles (Esc)</button>
+      </div>
+      <div id="panel-region" class="panel hidden">
+        <p class="hint">Drag a box over missed colonies. The settings above apply inside the box only.</p>
+        <button id="btn-add-region" class="primary">Add detected colonies (Enter)</button>
+        <button class="btn-clear">Clear region (Esc)</button>
+      </div>
+    </aside>
+
+    <div id="stage">
+      <canvas id="plate"></canvas>
+      <div id="chip"></div>
+      <div id="zoom"><button id="btn-zoom-out">−</button><span id="zoom-level"></span><button id="btn-zoom-in">+</button><button id="btn-fit" title="Whole plate">⤢</button></div>
+      <div id="busy" class="hidden">Working…</div>
+    </div>
+
+    <aside id="right">
+      <div class="card"><span id="count" class="big">0</span> colonies<div id="count-detail" class="small"></div></div>
+      <div id="status" class="small"></div>
+      <div id="guide" class="card guide"></div>
+      <button id="btn-stop" class="link">Stop the study and send what is done</button>
+    </aside>
+  </section>
+
+  <!-- End -->
+  <section id="screen-end" class="page hidden">
+    <div class="column">
+      <h1 id="end-title">Sending your results…</h1>
+      <p id="end-text" class="lead"></p>
+      <button id="btn-download" class="hidden">Download the results file</button>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <div id="loading" class="hidden"><div class="card"><div id="loading-text">Loading…</div><div class="bar"><div id="loading-bar"></div></div></div></div>
+</main>
+
+<dialog id="info">
+  <h2>What is this for?</h2>
+  <p>This study is part of a research paper on QuantaColony, software for measuring microbial colonies in
+    photos of plates. The paper asks how closely measurements agree when different people measure the same
+    plates.</p>
+  <p>Your measurements, the time each step took and your answers on the first page are sent to Alejandro
+    Navarro (University of California, Riverside). Your name only tells participants apart and does not
+    appear in the paper.</p>
+  <p>The study takes about 15 minutes and runs entirely in this browser tab.</p>
+  <form method="dialog"><button class="primary">Close</button></form>
+</dialog>
+
+<script type="module" src="app/main.js"></script>
+</body>
+</html>
