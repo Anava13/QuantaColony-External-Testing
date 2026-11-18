@@ -162,3 +162,4 @@ dialog .buttons { display: flex; gap: 8px; align-items: center; margin-top: 14px
 #start-note .passed { margin: 0; color: var(--link); font-weight: 600; }
 #start-note .passed:empty { display: none; }
 .guide .check .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+ul.checks li.restore { color: var(--danger-text); font-weight: 600; }

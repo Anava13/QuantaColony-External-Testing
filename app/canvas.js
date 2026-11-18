@@ -4,7 +4,8 @@
 
 const COLORS = { detected: "#2EC8BB", split: "#9C8CFF", manual: "#7BF501", selected: "#FF6B5E",
                  candidate: "#7BF501", drawn: "#ECEEE6", halo: "#0A0B09", ring: "#FF3DFF",
-                 flagged: "#FF9F1C", missed: "#FF3DFF" };
+                 flagged: "#FF9F1C", missed: "#FF3DFF",
+                 dot: "#FF3DFF", dotHeld: "#7BF501" };
 const MAX_SCALE = 40;
 
 export class PlateView {
@@ -153,6 +154,7 @@ export class PlateView {
       if (v.rect) this.box(...v.rect, COLORS.selected);
     }
     if (this.drag) this.box(this.drag.x0, this.drag.y0, this.drag.x1, this.drag.y1, this.drag.color);
+    this.drawDots();
     if (this.ring) {
       const [x, y, r] = this.ring;
       ctx.beginPath();
@@ -193,6 +195,29 @@ export class PlateView {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
+  }
+
+  // The region step's dots: magenta until the box being dragged (or the region drawn) holds them, then green.
+  drawDots() {
+    if (!this.dots || !this.dots.length) return;
+    const d = this.drag, roi = this.view && this.view.roi;
+    const box = d ? [Math.min(d.x0, d.x1), Math.min(d.y0, d.y1), Math.max(d.x0, d.x1), Math.max(d.y0, d.y1)]
+      : roi ? [roi[0], roi[1], roi[0] + roi[2], roi[1] + roi[3]] : null;
+    const ctx = this.ctx, r = 10 / this.scale;
+    for (const [x, y] of this.dots) {
+      const held = box && x >= box[0] && x <= box[2] && y >= box[1] && y <= box[3];
+      ctx.beginPath();
+      ctx.arc(x + 0.5, y + 0.5, r + 2.5 / this.scale, 0, 2 * Math.PI);
+      ctx.fillStyle = COLORS.halo;                             // a dark rim keeps the dot visible on any agar
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x + 0.5, y + 0.5, r, 0, 2 * Math.PI);
+      ctx.fillStyle = held ? COLORS.dotHeld : COLORS.dot;
+      ctx.fill();
+      ctx.lineWidth = 3 / this.scale;
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.stroke();
+    }
   }
 
   box(x0, y0, x1, y1, color) {

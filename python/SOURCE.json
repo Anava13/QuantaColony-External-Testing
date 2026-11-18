@@ -56,7 +56,7 @@
     "quantacolony/study/bundle/concepts/mass_three.png": "95f636fc16200cea6354709ca1bed5e0dbb882d0b85537d97cfd0913b8bbc450",
     "quantacolony/study/bundle/concepts/mass_two.png": "53adbc96daa65fe80bb441faf6d3d1d1b3bbc8535be94aedeaaec4f46e2b572a",
     "quantacolony/study/bundle/concepts/objects.png": "c7ccc9a50fecd3cb3730f7629756bcb815db1b32131b79fcb726385a3e5821d1",
-    "quantacolony/study/bundle/manifest.json": "ddaedc010ea93221f5edff65a031db31ffddf3c76b38d2f5be95b10b9eb2531d",
+    "quantacolony/study/bundle/manifest.json": "6de2966ae61f4dcce1470c413a13e0ae0930d86b6766692ed9b36bfbc55bde3f",
     "quantacolony/study/bundle/photos/practice.png": "923f0a842da460116f8e882cc2b8bd30ed2869a20b86c8f7f436b306a8e84c52",
     "quantacolony/study/bundle/photos/study_01.png": "1e6e1fb39c525071b9c49c0d3cd20dce5559c9941dc778c6b37fff07e53e9d52",
     "quantacolony/study/bundle/photos/study_02.png": "35991cf33543b951c0a36939ef4b60e802132b28b0075eaba1287ab5a09fdad5",
@@ -67,10 +67,10 @@
     "quantacolony/study/bundle/practice_artifacts.png": "8acaa7e2dcf81caf595d2431107f87c2d7bb1dcab66c99a0bcdba2b107dac27d",
     "quantacolony/study/bundle/practice_labels.png": "75a0d40257b4d1ff27edb57c62166e8ef3d5f19fe12de7006320c3a74ce144c4",
     "quantacolony/study/bundle/practice_truth.csv": "24ee7ddb3fe0c247e2ad7547aff5fb589bdc575c03c9834719148ffc41a72742",
-    "quantacolony/study/guide.py": "d9c155487434b402e034e5ebca4f6f6b62f61fb54bd9c5b9660f1b11bdf3b370",
+    "quantacolony/study/guide.py": "2d29b57e73c6d7ea9acb0ca2e0f2f0df7fd9e02ef554d4d5992afaf225749004",
     "quantacolony/study/model.py": "9deb1e1be006320ba5cd4db1ae3c35d2256c158c4b64b7065c7446ffa8f71b73",
     "quantacolony/study/project.py": "6b3373e4c9668b38fc02c0fbe60bf0b63a5ff84375be9a80075af015a5305193",
     "quantacolony/study/score.py": "ee2023143f62c84d0b5b735cacef27e2bfb9a08ee782d32505e60086c3845359",
-    "quantacolony/study/web.py": "a1efba155dc753ac57a4819093e75fd897f2419914c4bfdccd2f81102b49c24e"
+    "quantacolony/study/web.py": "4cf204845cc7b8d702922447efcd5f8b7ce39384417ecfb24df821add262c5a0"
   }
 }

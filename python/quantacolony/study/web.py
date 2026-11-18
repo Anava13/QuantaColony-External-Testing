@@ -600,7 +600,28 @@ class WebStudy:
             out["faint_added"] = sm.target_status(photo, self.labels, marks["faint"])[1]
         if "clump" in marks:
             out["clump_unmerged"] = sm.target_status(photo, self.labels, marks["clump"])[0]
+        dots = self._dots()
+        if dots:
+            ids = marks["bright"].colony_ids
+            if self.roi is not None:
+                rx, ry, rw, rh = self.roi
+                out["dots_boxed"] = all(rx <= x <= rx + rw and ry <= y <= ry + rh for x, y in dots)
+            if self.candidates is not None and len(self.candidates):
+                found = {int(self.labels[min(int(round(y + y0)), self.labels.shape[0] - 1),
+                                         min(int(round(x + x0)), self.labels.shape[1] - 1)])
+                         for x, y in self.candidates.centers}
+                out["dots_found"] = out.get("dots_boxed", False) and set(ids) <= found
+            out["added_dots"] = sm.target_status(photo, self.labels, sm.Target(ids, marks["bright"].center,
+                                                                                marks["bright"].radius))[1]
         return out
+
+    def _dots(self) -> list:
+        """[x, y] in crop pixels of the colonies the region step dots (the bright mark's colonies)."""
+        mark = self.bundle.marks.get("bright")
+        if mark is None or not mark.colony_ids or not self._is_practice():
+            return []
+        x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
+        return [[self.truth[i][0] - x0, self.truth[i][1] - y0] for i in mark.colony_ids if i in self.truth]
 
     def _guide_facts(self, open_sections) -> gd.GuideFacts:
         events = self.recorder.log.events if self.recorder is not None else []
@@ -615,10 +636,21 @@ class WebStudy:
         facts = self._guide_facts(open_sections)
         step = gd.STEPS[self.step]
         bullets = [{"text": n.text, "anchor": n.anchor, "done": n.met(facts)} for n in step.needs]
+        met = step.met(facts)
+        changes = gd.settings_changes(self.session.params) if step.tuned else []
+        if changes:                                    # the lesson's settings first, each change named
+            listed = "; ".join(f"{label} back to {want} (now {now})" for label, now, want, _ in changes)
+            text = f"Return the Step 1 settings to the lesson's values: {listed}"
+            if self.mode != "ModifyGlobalParameters":
+                text = "Choose Detect automatically, then return the Step 1 settings to the lesson's values: " + listed
+            anchor = "mode-ModifyGlobalParameters" if self.mode != "ModifyGlobalParameters" else changes[0][3]
+            bullets = [{"text": text, "anchor": anchor, "done": False, "restore": True}] + bullets
+            met = False
         pointing = next((b["anchor"] for b in bullets if not b["done"]), "")
         return {"done": False, "number": self.step + 1, "total": len(gd.STEPS), "key": step.key, "title": step.title,
-                "text": step.text, "bullets": bullets, "met": step.met(facts), "anchor": pointing,
-                "hide_outlines": step.hide_outlines, "ring": self.ring(step.ring), "ring_name": step.ring}
+                "text": step.text, "bullets": bullets, "met": met, "anchor": pointing,
+                "hide_outlines": step.hide_outlines, "ring": self.ring(step.ring), "ring_name": step.ring,
+                "dots": self._dots() if step.ring == "bright" else []}
 
     def pass_step(self, open_sections=()) -> None:
         """Next: only once every bullet of the step is checked."""

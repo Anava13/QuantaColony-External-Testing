@@ -129,6 +129,8 @@ function refresh() {
   state.plateView.setView(t.hide_outlines ? { ...v, colonies: [], pending: [], candidates: [] } : v);
   const ring = !t.done && t.ring && t.ring.length ? t.ring : null;  // the step's ringed part of the plate
   if (JSON.stringify(ring) !== JSON.stringify(state.plateView.ring)) state.plateView.setRing(ring);
+  state.plateView.dots = !t.done && t.dots ? t.dots : [];
+  state.plateView.draw();
   const p = state.plate;
   $("plate-label").textContent = p.practice ? "Practice plate"
     : `Plate ${p.number} of ${p.total}${p.reviewing ? " · changing after the review" : ""}`;
@@ -355,7 +357,7 @@ function renderGuide() {
   const first = t.bullets.findIndex(b => !b.done);
   t.bullets.forEach((b, i) => {
     const li = document.createElement("li");
-    li.className = b.done ? "done" : i === first ? "next" : "";
+    li.className = (b.done ? "done" : i === first ? "next" : "") + (b.restore ? " restore" : "");
     li.innerHTML = `<span class="box">${b.done ? "✓" : ""}</span><span></span>`;
     li.lastChild.textContent = b.text;
     list.appendChild(li);
