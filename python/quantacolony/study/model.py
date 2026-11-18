@@ -197,7 +197,7 @@ START_NOTE = (
     "Skip masses of five or more colonies that you cannot tell apart.",
     "Watch for false detections: delete any outline on something that is not a colony (plate numbers, bubbles, "
     "condensation, dust), or that covers more than one colony.",
-    "The six plates take about 15 minutes from here. Take the time to measure them carefully.",
+    "The three plates take about 15 minutes from here. Take the time to measure them carefully.",
 )
 
 STEPS = (
@@ -232,7 +232,7 @@ STEPS = (
          "Give each of the three colonies in the ring its own outline.", "ring",
          lambda f: f.target_resolved),
     Step("finish", "Finish the plate",
-         "Finish image saves the plate and opens the next one. After the practice plate, six plates follow. "
+         "Finish image saves the plate and opens the next one. After the practice plate, three plates follow. "
          "Work on each until its outlines match its colonies, then press Finish image.",
          "Press Finish image to start the study.", "finish", lambda f: f.practice_saved),
 )

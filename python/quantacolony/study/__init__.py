@@ -2,7 +2,7 @@
 
 The study asks whether measurements made with Colony Detection replicate across users. Each participant
 fills in a short form, reads what to measure, practices on a plate with a guided tutorial, then measures
-six plates (four synthetic with known truth, two real) in a random order. Benchmark recording
+three plates (two synthetic with known truth, one real) in a random order. Benchmark recording
 (core/benchmark.py) keeps every action with its time. The session ends with one zip file holding the
 participant's project and participant.json, to send back.
 

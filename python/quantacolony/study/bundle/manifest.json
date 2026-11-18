@@ -13,28 +13,6 @@
       ]
     },
     {
-      "name": "study_01",
-      "file": "study_01.png",
-      "role": "scored",
-      "px_per_mm": 10.556642771246176,
-      "dish": [
-        456.43666666666667,
-        456.43666666666667,
-        459.5
-      ]
-    },
-    {
-      "name": "study_02",
-      "file": "study_02.png",
-      "role": "scored",
-      "px_per_mm": 10.511586944946982,
-      "dish": [
-        459.5,
-        456.43666666666667,
-        459.5
-      ]
-    },
-    {
       "name": "study_03",
       "file": "study_03.png",
       "role": "scored",
@@ -55,13 +33,6 @@
         462.39666666666665,
         465.49999999999994
       ]
-    },
-    {
-      "name": "study_05",
-      "file": "study_05.png",
-      "role": "scored",
-      "px_per_mm": 11.130796146290688,
-      "dish": null
     },
     {
       "name": "study_06",

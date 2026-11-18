@@ -1,5 +1,5 @@
 // The study page: form, what to measure, the practice plate with its guide, the note before the scored
-// plates, six plates, the review of all six, sending the results.
+// plates, three plates, the review of all three, sending the results.
 // Colony Detection's decisions run in Python (quantacolony/study/web.py, through bridge.js). This file
 // shows screens, turns mouse gestures into the same tool calls the desktop tools make
 // (quantacolony/gui/tools.py), and sends the results file.
