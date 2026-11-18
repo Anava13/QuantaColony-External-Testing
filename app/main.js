@@ -127,15 +127,23 @@ function refresh() {
   const v = state.view = state.engine.call("view");
   const t = state.guide = state.engine.call("tutorial", openSections());
   state.plateView.setView(t.hide_outlines ? { ...v, colonies: [], pending: [], candidates: [] } : v);
-  const ring = !t.done && t.ring && t.ring.length ? t.ring : null;  // the step's ringed part of the plate
-  if (JSON.stringify(ring) !== JSON.stringify(state.plateView.ring)) state.plateView.setRing(ring);
+  state.plateView.ring = null;                                   // the step's part of the plate: four corner dots
   state.plateView.dots = !t.done && t.dots ? t.dots : [];
+  state.plateView.dotsCapture = !t.done && !!t.dots_capture;
   state.plateView.draw();
   const p = state.plate;
   $("plate-label").textContent = p.practice ? "Practice plate"
     : `Plate ${p.number} of ${p.total}${p.reviewing ? " · changing after the review" : ""}`;
   for (const b of document.querySelectorAll(".mode")) b.classList.toggle("on", b.dataset.mode === v.mode);
   for (const [mode, panel] of Object.entries(PANELS)) $(panel).classList.toggle("hidden", mode !== v.mode);
+  if (state.lastMode !== v.mode) {                               // the tool's group open, the other closed
+    state.lastMode = v.mode;
+    const auto = v.mode === "ModifyGlobalParameters";
+    if (state.plate && !t.hide_outlines && ($("grp-auto").open || $("grp-manual").open)) {
+      $("grp-auto").open = auto;
+      $("grp-manual").open = !auto;
+    }
+  }
   placeSettings(v.mode === "AddManyColonies");
   $("count").textContent = t.hide_outlines ? "–" : v.count;
   $("chip").textContent = t.hide_outlines ? "The practice plate" : CHIPS[v.mode];
@@ -218,6 +226,9 @@ function wireControls() {
   $("btn-zoom-out").onclick = () => state.plateView.zoomBy(1 / 1.4);
   $("btn-fit").onclick = () => state.plateView.fit();
   for (const d of document.querySelectorAll("details")) d.addEventListener("toggle", () => {
+    if (d.open && d.classList.contains("group")) {              // Step 1 and Step 2: one open at a time
+      for (const other of document.querySelectorAll("details.group[open]")) if (other !== d) other.open = false;
+    }
     if (d.open && d.classList.contains("sec")) {                // one settings section open at a time
       for (const other of document.querySelectorAll("details.sec[open]")) if (other !== d) other.open = false;
     }
@@ -283,7 +294,7 @@ const tools = {
     if (!pressed || !g) return;
     if (g.kind === "box") {
       state.plateView.drag = { x0: g.x0, y0: g.y0, x1: x, y1: y,
-                               color: state.view.mode === "DeleteManyColonies" ? "#FF6B5E" : "#ECEEE6" };
+                               color: state.view.mode === "DeleteManyColonies" ? "#FF6B5E" : "#7BF501" };   // delete red, add green
       state.plateView.draw();
       return;
     }

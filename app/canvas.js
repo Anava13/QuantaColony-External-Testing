@@ -5,7 +5,7 @@
 const COLORS = { detected: "#2EC8BB", split: "#9C8CFF", manual: "#7BF501", selected: "#FF6B5E",
                  candidate: "#7BF501", drawn: "#ECEEE6", halo: "#0A0B09", ring: "#FF3DFF",
                  flagged: "#FF9F1C", missed: "#FF3DFF",
-                 dot: "#FF3DFF", dotHeld: "#7BF501" };
+                 dot: "#FF3DFF", dotHeld: "#7BF501", addBox: "#7BF501", deleteBox: "#FF6B5E" };
 const MAX_SCALE = 40;
 
 export class PlateView {
@@ -150,7 +150,7 @@ export class PlateView {
       for (const [x, y, r] of v.missed || []) this.shape({ x, y, r: r + 2 }, COLORS.missed, 2, true, 1);   // training check
       for (const c of v.candidates) this.shape(c, COLORS.candidate, 1.8, true, 1);
       for (const c of v.pending) this.shape(c, COLORS.drawn, 1.8, true, 1);      // drawn, not added yet
-      if (v.roi) this.box(v.roi[0], v.roi[1], v.roi[0] + v.roi[2], v.roi[1] + v.roi[3], "#ECEEE6");
+      if (v.roi) this.box(v.roi[0], v.roi[1], v.roi[0] + v.roi[2], v.roi[1] + v.roi[3], COLORS.addBox);
       if (v.rect) this.box(...v.rect, COLORS.selected);
     }
     if (this.drag) this.box(this.drag.x0, this.drag.y0, this.drag.x1, this.drag.y1, this.drag.color);
@@ -200,9 +200,12 @@ export class PlateView {
   // The region step's dots: magenta until the box being dragged (or the region drawn) holds them, then green.
   drawDots() {
     if (!this.dots || !this.dots.length) return;
-    const d = this.drag, roi = this.view && this.view.roi;
-    const box = d ? [Math.min(d.x0, d.x1), Math.min(d.y0, d.y1), Math.max(d.x0, d.x1), Math.max(d.y0, d.y1)]
-      : roi ? [roi[0], roi[1], roi[0] + roi[2], roi[1] + roi[3]] : null;
+    const d = this.drag, roi = this.view && this.view.roi, rect = this.view && this.view.rect;
+    const box = !this.dotsCapture ? null
+      : d ? [Math.min(d.x0, d.x1), Math.min(d.y0, d.y1), Math.max(d.x0, d.x1), Math.max(d.y0, d.y1)]
+      : roi ? [roi[0], roi[1], roi[0] + roi[2], roi[1] + roi[3]]
+      : rect ? [Math.min(rect[0], rect[2]), Math.min(rect[1], rect[3]), Math.max(rect[0], rect[2]), Math.max(rect[1], rect[3])]
+      : null;
     const ctx = this.ctx, r = 10 / this.scale;
     for (const [x, y] of this.dots) {
       const held = box && x >= box[0] && x <= box[2] && y >= box[1] && y <= box[3];
@@ -222,9 +225,9 @@ export class PlateView {
 
   box(x0, y0, x1, y1, color) {
     const ctx = this.ctx;
-    ctx.setLineDash([5 / this.scale, 4 / this.scale]);
+    ctx.setLineDash([8 / this.scale, 6 / this.scale]);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5 / this.scale;
+    ctx.lineWidth = 3 / this.scale;
     ctx.strokeRect(Math.min(x0, x1) + 0.5, Math.min(y0, y1) + 0.5, Math.abs(x1 - x0), Math.abs(y1 - y0));
     ctx.setLineDash([]);
   }

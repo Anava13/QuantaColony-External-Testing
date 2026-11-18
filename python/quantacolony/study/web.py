@@ -600,12 +600,17 @@ class WebStudy:
             out["faint_added"] = sm.target_status(photo, self.labels, marks["faint"])[1]
         if "clump" in marks:
             out["clump_unmerged"] = sm.target_status(photo, self.labels, marks["clump"])[0]
-        dots = self._dots()
-        if dots:
+        if "snap" in marks:
+            out["snap_added"] = sm.target_status(photo, self.labels, marks["snap"])[1]
+        corners = self.corners("condensation")
+        if corners and self.selection_rect is not None:
+            out["cond_boxed"] = holds(self.selection_rect, corners)
+        dots = self.corners("bright")
+        if dots and marks["bright"].colony_ids:
             ids = marks["bright"].colony_ids
             if self.roi is not None:
                 rx, ry, rw, rh = self.roi
-                out["dots_boxed"] = all(rx <= x <= rx + rw and ry <= y <= ry + rh for x, y in dots)
+                out["dots_boxed"] = holds((rx, ry, rx + rw, ry + rh), dots)
             if self.candidates is not None and len(self.candidates):
                 found = {int(self.labels[min(int(round(y + y0)), self.labels.shape[0] - 1),
                                          min(int(round(x + x0)), self.labels.shape[1] - 1)])
@@ -615,13 +620,28 @@ class WebStudy:
                                                                                 marks["bright"].radius))[1]
         return out
 
-    def _dots(self) -> list:
-        """[x, y] in crop pixels of the colonies the region step dots (the bright mark's colonies)."""
-        mark = self.bundle.marks.get("bright")
-        if mark is None or not mark.colony_ids or not self._is_practice():
+    def corners(self, name: str) -> list:
+        """The four corner dots framing a bundle mark, [x, y] in crop pixels: for 'bright', the box holding
+        its pale colonies; for 'condensation', the box holding the droplets; otherwise the square around
+        the mark's circle."""
+        mark = self.bundle.marks.get(name)
+        if mark is None or not self._is_practice():
             return []
         x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
-        return [[self.truth[i][0] - x0, self.truth[i][1] - y0] for i in mark.colony_ids if i in self.truth]
+        if name == "bright" and mark.colony_ids:
+            pts = [self.truth[i] for i in mark.colony_ids if i in self.truth]
+            left = min(x - r for x, _, r in pts) - BOX_MARGIN
+            right = max(x + r for x, _, r in pts) + BOX_MARGIN
+            top = min(y - r for _, y, r in pts) - BOX_MARGIN
+            bottom = max(y + r for _, y, r in pts) + BOX_MARGIN
+        elif name == "condensation" and self.kinds is not None and np.any(self.kinds == 3):
+            ys, xs = np.nonzero(self.kinds == 3)
+            left, right = xs.min() - BOX_MARGIN, xs.max() + BOX_MARGIN
+            top, bottom = ys.min() - BOX_MARGIN, ys.max() + BOX_MARGIN
+        else:
+            (cx, cy), r = mark.center, mark.radius
+            left, right, top, bottom = cx - r, cx + r, cy - r, cy + r
+        return [[float(x) - x0, float(y) - y0] for x, y in ((left, top), (right, top), (right, bottom), (left, bottom))]
 
     def _guide_facts(self, open_sections) -> gd.GuideFacts:
         events = self.recorder.log.events if self.recorder is not None else []
@@ -651,7 +671,8 @@ class WebStudy:
         return {"done": False, "number": self.step + 1, "total": len(gd.STEPS), "key": step.key, "title": step.title,
                 "text": step.text, "bullets": bullets, "met": met, "anchor": pointing,
                 "hide_outlines": step.hide_outlines, "ring": self.ring(step.ring), "ring_name": step.ring,
-                "dots": self._dots() if step.ring == "bright" else []}
+                "dots": self.corners(step.ring) if step.ring else [],
+                "dots_capture": step.ring in ("bright", "condensation")}
 
     def pass_step(self, open_sections=()) -> None:
         """Next: only once every bullet of the step is checked."""
@@ -689,6 +710,15 @@ def describe_specs() -> str:
     """The settings' limits as JSON, for the page to build its controls before a plate opens."""
     return json.dumps({k: {"label": v.label, "min": v.minimum, "max": v.maximum, "step": v.step}
                        for k, v in PARAM_SPECS.items()})
+
+
+BOX_MARGIN = 10                    # pixels between a marked box's contents and its corner dots
+
+
+def holds(box, points) -> bool:
+    """True when the box (x0, y0, x1, y1, either corner order) holds every point."""
+    x0, y0, x1, y1 = box
+    return all(min(x0, x1) <= x <= max(x0, x1) and min(y0, y1) <= y <= max(y0, y1) for x, y in points)
 
 
 def feedback_label(verdict: str) -> str:

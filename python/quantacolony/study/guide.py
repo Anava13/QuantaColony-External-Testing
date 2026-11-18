@@ -89,7 +89,9 @@ class GuideFacts:
     mass_resolved: bool = False            # each colony of the mass has its own outline
     marker_clear: bool = False             # no outline centered on the ringed plate number
     condensation_clear: bool = False       # no outline centered on the ringed condensation
-    faint_added: bool = False              # the ringed faint colony has its own outline
+    faint_added: bool = False              # the marked faint colony has its own outline
+    snap_added: bool = False               # the marked dark colony (Snap) has its own outline
+    cond_boxed: bool = False               # the Delete a region box holds every corner dot of the condensation
     clump_unmerged: bool = False           # no outline covers two colonies of the inseparable mass
     dots_boxed: bool = False               # the region box holds every dot of the bright side
     dots_found: bool = False               # the region's dashed outlines hold every dotted colony
@@ -114,7 +116,7 @@ class GuideStep:
     text: str                              # why the step matters: under "More context", collapsed
     needs: tuple = ()
     hide_outlines: bool = False            # the photo without any outlines
-    ring: str = ""                         # the bundle mark ringed on the plate during this step
+    ring: str = ""                         # the bundle mark the step's four corner dots frame
     tuned: bool = False                    # the step waits until the Step 1 settings equal TUNED
 
     def met(self, facts: GuideFacts) -> bool:
@@ -180,45 +182,50 @@ STEPS = (
     GuideStep("manual", "Step 2 · Manual correction",
               "Automatic detection misses some colonies and outlines some things that are not colonies. The tools "
               "under Step 2 fix outlines one at a time or a box at a time. Each of the next steps uses one tool on a "
-              "ringed part of the plate. " + TUNED_NOTE,
+              "part of the plate marked by four dots. " + TUNED_NOTE,
               (Need("Open Step 2 · Manual correction on the left", "grp-manual", opened("grp-manual")),), tuned=True),
     GuideStep("delete", "Delete colonies",
-              "The ringed mark is a plate number written in marker under the dish. Plate numbers, bubbles in the "
+              "The mark between the dots is a plate number written in marker under the dish. Plate numbers, bubbles in the "
               "agar (small rings) and dust are not colonies, so their outlines are deleted.",
               (Need("Choose Delete colonies", "mode-DeleteIndividualColonies",
                     lambda f: f.mode == "DeleteIndividualColonies" or f.deleted_one),
-               Need("Click each outline on the ringed number (it turns red)", "plate",
+               Need("Click each outline on the number between the dots (it turns red)", "plate",
                     lambda f: f.selected_click or f.marker_clear),
                Need("Press Delete colonies", "btn-delete", lambda f: f.deleted_one and f.marker_clear)),
               ring="marker", tuned=True),
     GuideStep("delete_region", "Delete a region",
-              "The ringed patch is condensation: water droplets on the lid. Delete a region removes every outline "
+              "The patch between the dots is condensation: water droplets on the lid. Delete a region removes every outline "
               "inside a box, for an area full of false outlines like this one.",
               (Need("Choose Delete a region", "mode-DeleteManyColonies",
                     lambda f: f.mode == "DeleteManyColonies" or f.deleted_box),
-               Need("Drag a box over the ringed patch", "plate", lambda f: f.selected_box or f.condensation_clear),
+               Need("Drag a box around the four dots (each turns green inside the box)", "plate",
+                    lambda f: f.cond_boxed or (f.deleted_box and f.condensation_clear)),
                Need("Press Delete colonies", "btn-delete-region", lambda f: f.deleted_box and f.condensation_clear)),
               ring="condensation", tuned=True),
     GuideStep("add", "Add colonies",
-              "The ringed colony is faint, so automatic detection misses it. Drag across a colony from one edge to "
+              "The colony between the dots is faint, so automatic detection misses it. Drag across a colony from one edge to "
               "the other; the drag is its diameter. A drawn circle (white, dashed) is not a colony yet and does not "
               "count. Add colonies turns drawn circles into colonies, outlined in lime. Circles never added are left "
               "out of the results; Finish image warns you about them.",
               (Need("Choose Add colonies", "mode-AddIndividualColonies",
                     lambda f: f.mode == "AddIndividualColonies" or f.added_one),
-               Need("Drag across the ringed colony, edge to edge", "plate", lambda f: f.drew),
+               Need("Drag across the colony between the dots, edge to edge", "plate", lambda f: f.drew),
                Need("Press Add colonies: the circle turns lime and the count goes up", "btn-add",
                     lambda f: f.added_one and f.faint_added)), ring="faint", tuned=True),
     GuideStep("add_tools", "Snap and remove",
               "Snap to colony edge fits a drawn circle to the colony's own outline. It needs a clear edge, so it "
-              "works on dark colonies like the ringed one. On a faint colony it finds no edge and leaves the circle "
+              "works on dark colonies like the one between the dots. This one is larger than Max radius, so automatic "
+              "detection misses it. On a faint colony it finds no edge and leaves the circle "
               "as drawn; size that circle by hand. A right-click removes a drawn circle before it is added.",
               (Need("Turn on Snap to colony edge", "sw-contour", lambda f: f.contour_on or f.snapped),
-               Need("Drag across the ringed colony: the circle snaps to its edge", "plate", lambda f: f.snapped),
-               Need("Right-click the circle to remove it", "plate", lambda f: f.removed_drawn)),
+               Need("Drag across the colony between the dots: the circle snaps to its edge", "plate",
+                    lambda f: f.snapped or f.snap_added),
+               Need("Right-click the circle to remove it", "plate", lambda f: f.removed_drawn or f.snap_added),
+               Need("Drag across it again, then press Add colonies", "btn-add",
+                    lambda f: f.removed_drawn and f.snap_added)),
               ring="snap", tuned=True),
     GuideStep("region", "Detect in a region",
-              "Light falls unevenly on this plate. The ringed side is brighter, so its colonies look pale and the "
+              "Light falls unevenly on this plate. One side is brighter, so its colonies look pale and the "
               "plate-wide threshold misses them. Detect in a region runs automatic detection inside a box only. "
               "While this tool is on, the Step 1 settings sit under it, and a change applies inside the box only.",
               (Need("Choose Detect in a region", "mode-AddManyColonies",
@@ -240,9 +247,9 @@ STEPS = (
                Need("Draw and add one outline for each of the three", "plate", lambda f: f.mass_resolved)),
               ring="triple", tuned=True),
     GuideStep("skip", "A mass you cannot separate",
-              "The ringed mass holds about seven colonies that cannot be told apart. Masses of five or more like this "
+              "The mass between the dots holds about seven colonies that cannot be told apart. Masses of five or more like this "
               "are skipped. One outline around such a mass counts as a wrong outline.",
-              (Need("Leave the ringed mass without an outline (delete any outline on it)", "plate",
+              (Need("Leave the mass between the dots without an outline (delete any outline on it)", "plate",
                     lambda f: f.clump_unmerged),), ring="clump", tuned=True),
     GuideStep("finish", "Finish the practice plate",
               "Finish image checks your outlines against the plate's true colonies. Passing needs at least 90% of the "
@@ -300,4 +307,5 @@ def facts_from(events, params: DetectionParams, open_sections, mode: str, places
         marker_clear=places.get("marker_clear", False), condensation_clear=places.get("condensation_clear", False),
         faint_added=places.get("faint_added", False), clump_unmerged=places.get("clump_unmerged", False),
         dots_boxed=places.get("dots_boxed", False), dots_found=places.get("dots_found", False),
+        snap_added=places.get("snap_added", False), cond_boxed=places.get("cond_boxed", False),
         added_dots=places.get("added_dots", False))
