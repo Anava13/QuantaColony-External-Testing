@@ -63,8 +63,9 @@
     "quantacolony/study/bundle/photos/study_05.png": "8f715160f936817a5c188356b6d05eb51a472794213b1d1f2bc1ccd000b57cb7",
     "quantacolony/study/bundle/photos/study_06.png": "db8c53b27a879c625a15ffccd64fb42f4d40944789e2dece3b022c0d0ebf1418",
     "quantacolony/study/bundle/practice_labels.png": "1dc8dcf2e113ec3191335b22264fb65377905d02c7e1e6c4d4b2d69a922daa82",
-    "quantacolony/study/model.py": "70f1f054f7306babe60f45e45c53fa7c3f056d8729f3324ebc4c5257a41861df",
+    "quantacolony/study/guide.py": "045e78db5800728fb92d59cdbd1e364d44450a5f984452ead2db594fe0a1c86a",
+    "quantacolony/study/model.py": "2cf2212b1999f3453f55c4ec1cb855c669d2c1b8002b9fa303c9f867c0336f2c",
     "quantacolony/study/project.py": "d630b49547424600e154ae78170c56c27e9f3b899f0a9d490a145246b715683f",
-    "quantacolony/study/web.py": "e540c246c948e74cb92502f239fdb0f2611e1d096df739ba17af2ae1501f3fad"
+    "quantacolony/study/web.py": "55b2301e56ebe2e7af2db949acbb73529dc9a849f95d11bb451d6b444a68e6ca"
   }
 }

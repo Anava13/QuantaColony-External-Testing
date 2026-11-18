@@ -250,9 +250,9 @@ def detection_mask(center, radius: float, outline, window: tuple[int, int, int, 
     return mask
 
 
-def target_resolved(colonies, labels: np.ndarray, target: Target) -> bool:
-    """True when every colony of the mass has exactly one detection centered on it and no detection
-    covers at least half of two of them (the scorer's MERGED rule, score_quantacolony.py).
+def target_status(colonies, labels: np.ndarray, target: Target) -> tuple[bool, bool]:
+    """(no detection covers at least half of two colonies of the mass (the scorer's MERGED rule,
+    score_quantacolony.py), every colony of the mass has exactly one detection centered on it).
     colonies: a ColonySet in photo pixels; labels: the practice label image (0 = agar)."""
     cx, cy = target.center
     pad = target.radius * 1.5
@@ -262,6 +262,7 @@ def target_resolved(colonies, labels: np.ndarray, target: Target) -> bool:
     patch = labels[y0:y1, x0:x1]
     sizes = {i: int(np.sum(patch == i)) for i in target.colony_ids}
     centered = {i: 0 for i in target.colony_ids}
+    merged = False
     for k in range(len(colonies)):
         (x, y), r = colonies.centers[k], float(colonies.radii[k])
         if not (x0 - r <= x <= x1 + r and y0 - r <= y <= y1 + r):
@@ -272,6 +273,11 @@ def target_resolved(colonies, labels: np.ndarray, target: Target) -> bool:
             centered[owner] += 1
         mask = detection_mask((x, y), r, colonies.boundaries[k], window)
         covered = sum(1 for i in target.colony_ids if sizes[i] and np.sum(mask & (patch == i)) >= sizes[i] / 2)
-        if covered >= 2:
-            return False
-    return all(count == 1 for count in centered.values())
+        merged = merged or covered >= 2
+    return not merged, not merged and all(count == 1 for count in centered.values())
+
+
+def target_resolved(colonies, labels: np.ndarray, target: Target) -> bool:
+    """True when every colony of the mass has exactly one detection centered on it and no detection
+    covers at least half of two of them."""
+    return target_status(colonies, labels, target)[1]

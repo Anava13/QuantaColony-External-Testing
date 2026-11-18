@@ -11,8 +11,6 @@ const $ = id => document.getElementById(id);
 const SETTLE_MS = 300;           // settings: detect once the control has been still this long
 const POINTER_MS = 2000;
 const EDGE_PX = 6;               // screen pixels around a drawn circle's edge that count as the edge
-const ANCHORS = { settings: "ctl-sense", split: "ctl-split", delete: "mode-DeleteIndividualColonies",
-                  add: "mode-AddIndividualColonies", undo: "btn-undo", finish: "btn-finish" };
 const PANELS = { ModifyGlobalParameters: "panel-settings", DeleteIndividualColonies: "panel-delete",
                  DeleteManyColonies: "panel-delete-region", AddIndividualColonies: "panel-add",
                  AddManyColonies: "panel-region" };
@@ -117,24 +115,31 @@ async function startPractice() {
 async function openPlate() {
   state.plate = state.engine.call("plate");
   await state.plateView.setImage(state.engine.image(state.plate.width, state.plate.height));
-  state.plateView.setRing(state.engine.call("target_ring"));
   refresh();
+}
+
+function openSections() {
+  return [...document.querySelectorAll("details[open]")].map(d => d.id);
 }
 
 function refresh() {
   const v = state.view = state.engine.call("view");
-  state.plateView.setView(v);
+  const t = state.guide = state.engine.call("tutorial", openSections());
+  state.plateView.setView(t.hide_outlines ? { ...v, colonies: [], pending: [], candidates: [] } : v);
+  const ring = !t.done && t.key === "mass";                      // the ringed mass: its own step only
+  if (ring !== !!state.plateView.ring) state.plateView.setRing(ring ? state.engine.call("target_ring") : null);
   const p = state.plate;
   $("plate-label").textContent = p.practice ? "Practice plate" : `Plate ${p.number} of ${p.total}`;
   for (const b of document.querySelectorAll(".mode")) b.classList.toggle("on", b.dataset.mode === v.mode);
   for (const [mode, panel] of Object.entries(PANELS)) $(panel).classList.toggle("hidden", mode !== v.mode);
   if (v.mode === "AddManyColonies") $("panel-settings").classList.remove("hidden");
-  $("chip").textContent = CHIPS[v.mode];
+  $("count").textContent = t.hide_outlines ? "–" : v.count;
+  $("chip").textContent = t.hide_outlines ? "The practice plate" : CHIPS[v.mode];
   setControls(v.settings);
   $("ctl-contour").checked = v.contour;
-  $("count").textContent = v.count;
-  $("count-detail").textContent = `${v.count - v.added} automatic · ${v.added} added`;
-  $("status").textContent = v.status;
+  if (!t.hide_outlines) $("count").textContent = v.count;
+  $("count-detail").textContent = t.hide_outlines ? "" : `${v.count - v.added} automatic · ${v.added} added`;
+  $("status").textContent = t.hide_outlines ? "" : v.status;
   $("btn-undo").disabled = v.undo === 0;
   $("btn-redo").disabled = v.redo === 0;
   renderGuide();
@@ -196,6 +201,12 @@ function wireControls() {
   $("btn-zoom-in").onclick = () => state.plateView.zoomBy(1.4);
   $("btn-zoom-out").onclick = () => state.plateView.zoomBy(1 / 1.4);
   $("btn-fit").onclick = () => state.plateView.fit();
+  for (const d of document.querySelectorAll("details")) d.addEventListener("toggle", () => {
+    if (d.open && d.classList.contains("sec")) {                // one settings section open at a time
+      for (const other of document.querySelectorAll("details.sec[open]")) if (other !== d) other.open = false;
+    }
+    if (state.plate) refresh();
+  });
   $("btn-stop").onclick = () => { if (confirm("Stop the study? The plates you finished are sent; the rest are left out.")) endStudy(false); };
 }
 
@@ -279,53 +290,75 @@ function wireKeys() {
   window.addEventListener("beforeunload", e => { if (state.active) { e.preventDefault(); e.returnValue = ""; } });
 }
 
-// ===== the guide (study/model.py STEPS) ================================================
+// ===== the guide (study/guide.py STEPS) ================================================
 function renderGuide() {
-  const t = state.engine.call("tutorial");
+  const t = state.guide;
   const guide = $("guide");
   if (t.done) {
+    point("");
     const p = state.plate;
-    guide.innerHTML = `<div class="step"></div><h2>Measure every colony</h2><p></p>` +
+    guide.innerHTML = `<div class="step"></div><h2>Measure every colony</h2><p></p><p></p>` +
       `<p>Press Finish image when the outlines match the colonies. The next plate opens on its own.</p>`;
     guide.querySelector(".step").textContent = p.practice ? "" : `Plate ${p.number} of ${p.total}`;
     guide.querySelectorAll("p")[0].textContent = t.goal;
+    guide.querySelectorAll("p")[1].textContent = t.colors;
     return;
   }
-  guide.innerHTML = `<div class="step"></div><h2></h2><p class="text"></p><p class="task"></p><div class="buttons"></div>`;
+  guide.innerHTML = `<div class="step"></div><h2></h2><p class="text"></p><ul class="checks"></ul><div class="buttons"></div>`;
   guide.querySelector(".step").textContent = `Practice · step ${t.number} of ${t.total}`;
   guide.querySelector("h2").textContent = t.title;
   guide.querySelector(".text").textContent = t.text;
-  const task = guide.querySelector(".task");
-  task.textContent = t.task ? (t.met ? "✓ " : "→ ") + t.task : "";
-  task.classList.toggle("done", t.met);
+  const list = guide.querySelector("ul");
+  const first = t.bullets.findIndex(b => !b.done);
+  t.bullets.forEach((b, i) => {
+    const li = document.createElement("li");
+    li.className = b.done ? "done" : i === first ? "next" : "";
+    li.innerHTML = `<span class="box">${b.done ? "✓" : ""}</span><span></span>`;
+    li.lastChild.textContent = b.text;
+    list.appendChild(li);
+  });
   const buttons = guide.querySelector(".buttons");
-  const button = (text, cls, handler) => {
-    const b = document.createElement("button");
-    b.textContent = text;
-    if (cls) b.className = cls;
-    b.onclick = handler;
-    buttons.appendChild(b);
+  const button = (text, cls, handler, disabled = false) => {
+    const el = document.createElement("button");
+    el.textContent = text;
+    if (cls) el.className = cls;
+    el.disabled = disabled;
+    el.onclick = handler;
+    buttons.appendChild(el);
   };
-  if (t.task) {
-    button("Show me", "", () => spotlight(t.anchor));
-    if (!t.met && t.key !== "finish") button("Skip this step", "link", () => act("skip_step"));
-  } else {
-    button("Next", "primary", () => act("pass_step"));
+  if (t.key !== "finish") button("Next", "primary", () => act("pass_step", openSections()), !t.met);
+  if (!t.met && t.key !== "finish" && t.bullets.length) button("Skip this step", "link", () => act("skip_step"));
+  point(t.anchor);
+  if (t.key === "mass" && state.zoomedTo !== "mass") {          // bring the ringed mass into view once
+    state.zoomedTo = "mass";
+    const ring = state.engine.call("target_ring");
+    if (ring.length) state.plateView.centerOn(ring[0], ring[1], 4 * state.plateView.fitScale);
   }
 }
 
-function spotlight(anchor) {
-  if (anchor === "ring") {
-    const ring = state.engine.call("target_ring");
-    if (ring.length) state.plateView.centerOn(ring[0], ring[1], 4 * state.plateView.fitScale);
-    return;
+// The control the next unchecked bullet uses stays outlined; inside a collapsed group or section, the
+// outermost collapsed one's title is outlined, so the participant opens it first.
+function point(anchor) {
+  const target = anchorElement(anchor);
+  if (state.pointed === target) return;
+  if (state.pointed) state.pointed.classList.remove("spot");
+  state.pointed = target;
+  if (target) {
+    target.classList.add("spot");
+    target.scrollIntoView({ block: "nearest" });
   }
-  const el = $(ANCHORS[anchor]);
-  if (!el) return;
-  if (anchor === "settings" || anchor === "split") setMode("ModifyGlobalParameters");
-  el.scrollIntoView({ block: "nearest" });
-  el.classList.add("spot");
-  setTimeout(() => el.classList.remove("spot"), 3000);
+}
+
+function anchorElement(anchor) {
+  if (!anchor || anchor === "plate") return null;
+  let el = $(anchor);
+  if (!el) return null;
+  if (el.tagName === "DETAILS") el = el.querySelector("summary");
+  let closed = null;
+  for (let d = el.parentElement; d; d = d.parentElement) {
+    if (d.tagName === "DETAILS" && !d.open) closed = d;
+  }
+  return closed ? closed.querySelector("summary") : el;
 }
 
 // ===== finishing ========================================================================

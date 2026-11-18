@@ -31,7 +31,8 @@ from ..core.drawing import DrawnCircle, drawn_to_colonies, hit_test
 from ..core.messages import compose_message
 from ..core.params import (DetectionParams, PARAM_SPECS, level_from_threshold, threshold_from_level,
                            validate_detection_parameters)
-from ..core.session import session_from_packet
+from ..core.session import DetectionSession, session_from_packet
+from . import guide as gd
 from . import model as sm
 from . import project as sp
 
@@ -58,7 +59,8 @@ class WebStudy:
         self.roi = None
         self.roi_params = None
         self.candidates = None
-        self.passed: set[str] = set()
+        self.step = 0                              # the guide's current step (guide.STEPS)
+        self.estimate_pressed = False              # Estimate settings pressed, even when nothing changed
         self.skipped: list[str] = []
         self.practice_done = False
         self.status = ""
@@ -111,10 +113,17 @@ class WebStudy:
 
     def open_next(self) -> bool:
         """The first plate not saved yet (False when every plate is saved)."""
-        waiting = next((i for i, _, revision in self._ordered_indices() if not revision), None)
+        waiting = next(((i, value) for i, value, revision in self._ordered_indices() if not revision), None)
         if waiting is None:
             return False
-        self._bind(session_from_packet(self.manager.checkout_image(waiting)))
+        packet = self.manager.checkout_image(waiting[0])
+        if waiting[1] == sm.PRACTICE:                  # the guide starts from poorly tuned settings
+            session = DetectionSession(packet.record, gd.POOR)
+            session.start_source = "tutorial"
+            session.initialize_detection()
+        else:
+            session = session_from_packet(packet)
+        self._bind(session)
         return True
 
     def _bind(self, session) -> None:
@@ -269,6 +278,7 @@ class WebStudy:
 
     def estimate(self) -> None:
         """Estimate settings (estimate_settings)."""
+        self.estimate_pressed = True
         params = self.session.estimated_parameters()
         if params == self.session.params:
             self._say("SettingsAlreadyEstimated")
@@ -418,35 +428,41 @@ class WebStudy:
         more = self.open_next()
         return {"done": not more}
 
-    # ===== the tutorial ===============================================================
-    def _facts(self) -> sm.Facts:
+    # ===== the guide (study/guide.py) ================================================
+    def _guide_facts(self, open_sections) -> gd.GuideFacts:
+        mass = (False, False)
         practice = self.session is not None and self.session.record.labels[0].value == sm.PRACTICE
-        target = False
         if practice and self.bundle.target is not None:
             x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
-            target = sm.target_resolved(self.session.colonies.translated(x0, y0), self.labels, self.bundle.target)
+            mass = sm.target_status(self.session.colonies.translated(x0, y0), self.labels, self.bundle.target)
         events = self.recorder.log.events if self.recorder is not None else []
-        return sm.facts_from_events(events, self.session.record.labels[0].value if self.session else "", target,
-                                    self.practice_done)
+        return gd.facts_from(events, self.session.params, list(open_sections or ()), self.mode, mass,
+                             self.practice_done, self.estimate_pressed)
 
-    def tutorial(self) -> dict:
-        """The guide: the current step, or done (the practice plate is saved)."""
+    def tutorial(self, open_sections=()) -> dict:
+        """The guide's current step with a checkmark per bullet, or done once the practice plate is saved.
+        open_sections: ids of the sections open on the page."""
         if self.practice_done:
-            return {"done": True, "goal": sm.GOAL}
-        facts = self._facts()
-        index = min(sm.current_step(facts, self.passed), len(sm.STEPS) - 1)
-        step = sm.STEPS[index]
-        return {"done": False, "number": index + 1, "total": len(sm.STEPS), "key": step.key, "title": step.title,
-                "text": step.text, "task": step.task, "anchor": step.anchor, "met": step.met(facts)}
+            return {"done": True, "goal": sm.GOAL, "colors": gd.COLORS}
+        facts = self._guide_facts(open_sections)
+        step = gd.STEPS[self.step]
+        bullets = [{"text": n.text, "anchor": n.anchor, "done": n.met(facts)} for n in step.needs]
+        pointing = next((b["anchor"] for b in bullets if not b["done"]), "")
+        return {"done": False, "number": self.step + 1, "total": len(gd.STEPS), "key": step.key, "title": step.title,
+                "text": step.text, "bullets": bullets, "met": step.met(facts), "anchor": pointing,
+                "hide_outlines": step.hide_outlines}
 
-    def pass_step(self) -> None:
-        self.passed.add(self.tutorial()["key"])
+    def pass_step(self, open_sections=()) -> None:
+        """Next: only once every bullet of the step is checked."""
+        step = gd.STEPS[self.step]
+        if step.met(self._guide_facts(open_sections)) and self.step < len(gd.STEPS) - 1:
+            self.step += 1
 
     def skip_step(self) -> None:
-        key = self.tutorial()["key"]
-        if key != "finish":
-            self.passed.add(key)
-            self.skipped.append(key)
+        """Skip a step without meeting it (recorded); the last step (Finish image) cannot be skipped."""
+        if self.step < len(gd.STEPS) - 1:
+            self.skipped.append(gd.STEPS[self.step].key)
+            self.step += 1
 
     def target_ring(self) -> list:
         """[cx, cy, r] of the tutorial's mass in crop pixels ([] outside the practice plate)."""
