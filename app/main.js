@@ -171,6 +171,7 @@ function setControls(s) {
   for (const b of $("ctl-shape").children) b.classList.toggle("on", b.dataset.v === s.shape);
   for (const b of $("ctl-color").children) b.classList.toggle("on", b.dataset.v === s.color);
   $("split-rows").classList.toggle("hidden", !s.split);
+  $("circular-only").classList.toggle("hidden", s.shape !== "Circular");     // Largest object: Circular only
 }
 
 function readControls() {

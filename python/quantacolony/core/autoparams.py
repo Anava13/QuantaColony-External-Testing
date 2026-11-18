@@ -67,7 +67,11 @@ def estimate_with_extent(image_rgb: np.ndarray, mask: np.ndarray | None,
     spec_min, spec_max = PARAM_SPECS["rmin"], PARAM_SPECS["rmax"]
     rmin = float(np.clip(math.floor(0.6 * low), MIN_RADIUS_PX, spec_min.maximum))
     rmax = float(np.clip(math.ceil(1.5 * high), rmin + 1, spec_max.maximum))
-    maxpix_spec = PARAM_SPECS["maxpix"]
-    maxpix = float(np.clip(math.ceil(2 * math.pi * rmax ** 2 / maxpix_spec.step) * maxpix_spec.step,
-                           maxpix_spec.step, maxpix_spec.maximum))
-    return replace(start, level=level, rmin=rmin, rmax=rmax, maxpix=maxpix), "full"
+    return replace(start, level=level, rmin=rmin, rmax=rmax, maxpix=maxpix_for(rmax)), "full"
+
+
+def maxpix_for(rmax: float) -> float:
+    """Largest object for a maximum radius: twice a circle of that radius, rounded up to the control's
+    step. Above one colony's area, so it never removes a single colony the radius limits keep."""
+    spec = PARAM_SPECS["maxpix"]
+    return float(np.clip(math.ceil(2 * math.pi * rmax ** 2 / spec.step) * spec.step, spec.step, spec.maximum))

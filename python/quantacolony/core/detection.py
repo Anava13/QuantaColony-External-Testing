@@ -178,8 +178,8 @@ def detect_circular_colonies(mask: np.ndarray, params: DetectionParams) -> Colon
         min_xdistance=int(params.rmin), min_ydistance=int(params.rmin))
 
     # A colony is a filled blob, so its center must lie on the mask
-    rows = np.clip(cy, 0, filtered.shape[0] - 1)
-    cols = np.clip(cx, 0, filtered.shape[1] - 1)
+    rows = np.clip(np.asarray(cy, dtype=int), 0, filtered.shape[0] - 1)      # empty peaks come back as floats
+    cols = np.clip(np.asarray(cx, dtype=int), 0, filtered.shape[1] - 1)
     centered = filtered[rows, cols]
     n = int(centered.sum())
     return ColonySet.from_columns(

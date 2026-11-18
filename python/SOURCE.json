@@ -5,14 +5,14 @@
   "files": {
     "quantacolony/__init__.py": "2420288ecb0a80b41872d884d6f12820f2eecd496d96643c5094e28f055b95ac",
     "quantacolony/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "quantacolony/core/autoparams.py": "521d372d34db007e4b9709a019bfef487a00fe6144cc0891c0e40696a5d36a26",
+    "quantacolony/core/autoparams.py": "c45e8193065c35ae2e52d7d6d43c81d5f3da0d855b40bf307cd81fd72f4fd2fe",
     "quantacolony/core/benchmark.py": "97869cdd461a43a357abe598b5621d676b2c26ad40080b6684a1da0bfed2824a",
     "quantacolony/core/colony_set.py": "0d8cc8785413e78ed209cda3ea3866f8da89a9af7a36934d3fe7c228148e01f4",
     "quantacolony/core/commands.py": "1fac9b88056010fcdf4b76d9ac5540f366ad09b318c5c7a726f73f849d03432a",
     "quantacolony/core/contour.py": "0270e56449ec8558cd09e22294b82b2e098134371bfbd9f4aeda7956654512e7",
     "quantacolony/core/cropping.py": "1a61707000ad10b617c1281053aa9232d9de6da52b0f5b82eca670179e2e8fa7",
     "quantacolony/core/crowding.py": "3fcf3f11afd5fb507a3f74ec73ac7b9055042e30595844a643be28f285ea7b3d",
-    "quantacolony/core/detection.py": "5dd4ede959255d2a9dd9266844bd9eee09ce9a9963e5a32092166cc00bec32af",
+    "quantacolony/core/detection.py": "c31eca2be6847f0ac04c07e8e7c1956595216ac5add0d4ada85ea45be80db9f3",
     "quantacolony/core/drawing.py": "84011a26dd1d70bea1ac4216339b356fcdb0af2b55ab904c4adebf485af1c844",
     "quantacolony/core/growth.py": "15d1ad16b6bf0c403a5cdc1817b055ae07628b9cb6a13ca9a1945592c0ad7d46",
     "quantacolony/core/measurements.py": "01330e6711139577b888297cb1e3f1df6b702b002b5f59aba06f9f70feac2b3d",
@@ -63,9 +63,9 @@
     "quantacolony/study/bundle/photos/study_05.png": "8f715160f936817a5c188356b6d05eb51a472794213b1d1f2bc1ccd000b57cb7",
     "quantacolony/study/bundle/photos/study_06.png": "db8c53b27a879c625a15ffccd64fb42f4d40944789e2dece3b022c0d0ebf1418",
     "quantacolony/study/bundle/practice_labels.png": "1dc8dcf2e113ec3191335b22264fb65377905d02c7e1e6c4d4b2d69a922daa82",
-    "quantacolony/study/guide.py": "64210dc906f818b3764a7267305897615e2e4fbee7cfa5dc75b3e26c4289799c",
+    "quantacolony/study/guide.py": "f2f0bcd0f305a29ff03bc770e15a394a2eed23b2d73a90d69993a4dde4b8a467",
     "quantacolony/study/model.py": "033c3d7d484a017ccf341b389d0eb53244f4e3477fd72aca72df10d5dd5b988b",
     "quantacolony/study/project.py": "6b3373e4c9668b38fc02c0fbe60bf0b63a5ff84375be9a80075af015a5305193",
-    "quantacolony/study/web.py": "4371827eeca9e74cf26f5ab2b181f53ecc3358949f1e3348672636bd95089236"
+    "quantacolony/study/web.py": "1464bb5dac02ff84ac5a254aa707fd8bd9124be1d45db11305f6f13322014514"
   }
 }

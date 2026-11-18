@@ -66,6 +66,10 @@
             <div class="seg" id="ctl-shape"><button data-v="Irregular">Irregular</button><button data-v="Circular">Circular</button></div>
             <p class="hint">Circular fits a circle to each colony and errs toward missed colonies. Irregular follows
               each colony's edge and errs toward false detections.</p>
+            <div id="circular-only">
+              <div class="ctl small-ctl" id="ctl-maxpix"><label>Largest object (px)</label><input type="number" min="0" max="10000" step="250" data-field="maxpix"></div>
+              <p class="hint">Circular only: blobs covering more pixels than this are left out before circles are fitted.</p>
+            </div>
           </details>
           <details class="sec" id="sec-threshold">
             <summary>Brightness threshold</summary>
@@ -78,7 +82,6 @@
               <div class="ctl small-ctl" id="ctl-rmin"><label>Min radius (px)</label><input type="number" min="1" max="100" step="1" data-field="rmin"></div>
               <div class="ctl small-ctl" id="ctl-rmax"><label>Max radius (px)</label><input type="number" min="0" max="200" step="1" data-field="rmax"></div>
             </div>
-            <div class="ctl small-ctl" id="ctl-maxpix"><label>Largest object (px)</label><input type="number" min="0" max="10000" step="250" data-field="maxpix"></div>
           </details>
           <details class="sec" id="sec-sensitivity">
             <summary>Sensitivity</summary>

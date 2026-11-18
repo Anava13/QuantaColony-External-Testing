@@ -32,6 +32,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from ..core.benchmark import POINTER_EVERY_MS, SETTING_EVERY_MS, DetectionRecorder, params_data, reference_start
+from ..core.autoparams import maxpix_for
 from ..core.colony_set import ColonySet
 from ..core.drawing import DrawnCircle, drawn_to_colonies, hit_test
 from ..core.messages import compose_message
@@ -264,6 +265,8 @@ class WebStudy:
         """The controls' values, once they settle: detect the whole plate again, or (Detect in a region)
         preview the region (handle_backup_and_detection, update_region_detection)."""
         s = dict(settings)
+        if str(s["shape"]) != "Circular":              # Largest object is a Circular control; it follows Max radius
+            s["maxpix"] = maxpix_for(float(s["rmax"]))
         params = DetectionParams(level=level_from_threshold(s["color"], float(s["threshold"])), sense=float(s["sense"]),
                                  rmin=float(s["rmin"]), rmax=float(s["rmax"]), maxpix=float(s["maxpix"]),
                                  detection_type=str(s["shape"]), split=bool(s["split"]),

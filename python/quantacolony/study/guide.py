@@ -18,9 +18,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..core.autoparams import maxpix_for
 from ..core.params import DetectionParams
 
-POOR = DetectionParams(level=0.25, sense=0.5, rmin=3.0, rmax=8.0, maxpix=300.0, detection_type="Irregular",
+POOR = DetectionParams(level=0.25, sense=0.5, rmin=3.0, rmax=8.0, maxpix=maxpix_for(8.0), detection_type="Irregular",
                        split=False)
 
 COLORS = ("Teal outlines are colonies the program detected; purple ones were cut from a mass of touching "
@@ -96,6 +97,15 @@ STEPS = (
               (Need("Open Colony appearance", "sec-appearance", opened("sec-appearance")),
                Need("Choose Light and watch the outlines disappear", "ctl-color", lambda f: f.seen_light),
                Need("Choose Dark again", "ctl-color", lambda f: f.seen_light and f.params.level > 0))),
+    GuideStep("shape", "Colony shape",
+              "Circular fits a circle to each colony and errs toward missing colonies. Irregular follows each "
+              "colony's own edge and errs toward outlining things that are not colonies, which you then delete. "
+              "Circular has one more setting, Largest object: blobs covering more pixels than this are left out "
+              "before circles are fitted. Irregular suits these plates.",
+              (Need("Choose Circular: on these untuned settings it misses nearly every colony. Find Largest object below it", "ctl-shape",
+                    lambda f: f.seen_circular),
+               Need("Choose Irregular again", "ctl-shape",
+                    lambda f: f.seen_circular and f.params.detection_type == "Irregular"))),
     GuideStep("threshold", "Brightness threshold",
               "Pixels darker than this threshold count as colony. Too low, and only the darkest centers count; "
               "too high, and the agar starts to count too.",
@@ -103,11 +113,10 @@ STEPS = (
                Need("Raise it to about 0.40, watching more colonies get outlines", "ctl-threshold",
                     lambda f: 0.36 <= f.params.level <= 0.48),)),
     GuideStep("size", "Colony size",
-              "Objects smaller than Min radius or larger than Max radius are left out, and so are objects covering "
-              "more pixels than Largest object. These limits keep dust and smears out without losing colonies.",
+              "Objects smaller than Min radius or larger than Max radius are left out. These limits keep dust and "
+              "smears out without losing colonies.",
               (Need("Open Colony size", "sec-size", opened("sec-size")),
-               Need("Raise Max radius to 15 px or more", "ctl-rmax", lambda f: f.params.rmax >= 15),
-               Need("Raise Largest object to 1500 px or more", "ctl-maxpix", lambda f: f.params.maxpix >= 1500))),
+               Need("Raise Max radius to 15 px or more", "ctl-rmax", lambda f: f.params.rmax >= 15))),
     GuideStep("sensitivity", "Sensitivity",
               "Sensitivity sets how far from round an object can be and still count as a colony. Low values keep "
               "only round objects.",
@@ -119,13 +128,6 @@ STEPS = (
               (Need("Open Touching colonies", "sec-split", opened("sec-split")),
                Need("Turn on Split touching colonies, then look at the purple outlines", "ctl-split",
                     lambda f: f.params.split))),
-    GuideStep("shape", "Colony shape",
-              "Circular fits a circle to each colony and errs toward missing colonies. Irregular follows each "
-              "colony's own edge and errs toward outlining things that are not colonies, which you then delete. "
-              "Irregular suits these plates.",
-              (Need("Choose Circular and compare the outlines", "ctl-shape", lambda f: f.seen_circular),
-               Need("Choose Irregular again", "ctl-shape",
-                    lambda f: f.seen_circular and f.params.detection_type == "Irregular"))),
     GuideStep("estimate", "Estimate settings",
               "Estimate settings reads the photo and sets all of these at once. Every plate in the study starts "
               "from its own estimate, so on most plates the settings only need small changes.",
