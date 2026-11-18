@@ -339,26 +339,35 @@ function renderGuide() {
   if (t.done) {
     point("");
     const p = state.plate;
-    guide.innerHTML = `<div class="step"></div><h2>Measure every colony</h2><p></p><p></p>` +
-      `<p></p>`;
+    guide.innerHTML = `<div class="step"></div><h2>Measure this plate</h2><ul class="tasks"></ul>` +
+      `<details class="context"><summary>More context</summary><p></p><p></p></details>`;
     guide.querySelector(".step").textContent = p.practice ? "" : `Plate ${p.number} of ${p.total}`;
-    guide.querySelectorAll("p")[0].textContent = t.goal;
-    guide.querySelectorAll("p")[1].textContent = t.colors;
-    guide.querySelectorAll("p")[2].textContent = p.reviewing
-      ? "Press Finish image when the outlines match the colonies to return to the review."
-      : "Press Finish image when the outlines match the colonies. The next plate opens on its own.";
+    const tasks = [...t.tasks];
+    if (p.reviewing) tasks[tasks.length - 1] = "Press Finish image to return to the review";
+    for (const text of tasks) {
+      const li = document.createElement("li");
+      li.textContent = text;
+      guide.querySelector("ul").appendChild(li);
+    }
+    guide.querySelectorAll(".context p")[0].textContent = t.goal;
+    guide.querySelectorAll(".context p")[1].textContent = t.colors;
     return;
   }
-  guide.innerHTML = `<div class="step"></div><h2></h2><p class="text"></p><ul class="checks"></ul><div class="buttons"></div>`;
+  const keepOpen = state.contextOpen === t.key;               // the context toggle stays as the participant left it
+  guide.innerHTML = `<div class="step"></div><h2></h2><ul class="checks"></ul><div class="buttons"></div>` +
+    `<details class="context"><summary>More context</summary><p class="text"></p></details>`;
   guide.querySelector(".step").textContent = `Practice · step ${t.number} of ${t.total}`;
   guide.querySelector("h2").textContent = t.title;
   guide.querySelector(".text").textContent = t.text;
+  const context = guide.querySelector("details.context");
+  context.open = keepOpen;
+  context.addEventListener("toggle", e => { e.stopPropagation(); state.contextOpen = context.open ? t.key : null; });
   const list = guide.querySelector("ul");
   const first = t.bullets.findIndex(b => !b.done);
   t.bullets.forEach((b, i) => {
     const li = document.createElement("li");
-    li.className = (b.done ? "done" : i === first ? "next" : "") + (b.restore ? " restore" : "");
-    li.innerHTML = `<span class="box">${b.done ? "✓" : ""}</span><span></span>`;
+    li.className = b.info ? "info" : (b.done ? "done" : i === first ? "next" : "") + (b.restore ? " restore" : "");
+    li.innerHTML = b.info ? `<span class="dot">•</span><span></span>` : `<span class="box">${b.done ? "✓" : ""}</span><span></span>`;
     li.lastChild.textContent = b.text;
     list.appendChild(li);
   });

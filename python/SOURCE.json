@@ -67,10 +67,10 @@
     "quantacolony/study/bundle/practice_artifacts.png": "8acaa7e2dcf81caf595d2431107f87c2d7bb1dcab66c99a0bcdba2b107dac27d",
     "quantacolony/study/bundle/practice_labels.png": "75a0d40257b4d1ff27edb57c62166e8ef3d5f19fe12de7006320c3a74ce144c4",
     "quantacolony/study/bundle/practice_truth.csv": "24ee7ddb3fe0c247e2ad7547aff5fb589bdc575c03c9834719148ffc41a72742",
-    "quantacolony/study/guide.py": "2d29b57e73c6d7ea9acb0ca2e0f2f0df7fd9e02ef554d4d5992afaf225749004",
+    "quantacolony/study/guide.py": "d428dea066801999f4cdb45511534e73eeee51dc06c92d38b96a72b49064ccd6",
     "quantacolony/study/model.py": "9deb1e1be006320ba5cd4db1ae3c35d2256c158c4b64b7065c7446ffa8f71b73",
     "quantacolony/study/project.py": "6b3373e4c9668b38fc02c0fbe60bf0b63a5ff84375be9a80075af015a5305193",
     "quantacolony/study/score.py": "ee2023143f62c84d0b5b735cacef27e2bfb9a08ee782d32505e60086c3845359",
-    "quantacolony/study/web.py": "4cf204845cc7b8d702922447efcd5f8b7ce39384417ecfb24df821add262c5a0"
+    "quantacolony/study/web.py": "265eeb65adddbd66a4bc168f49de468a035945e3e0a17d12d334b6b57c3d1596"
   }
 }

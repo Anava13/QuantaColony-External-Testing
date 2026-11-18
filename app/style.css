@@ -163,3 +163,10 @@ dialog .buttons { display: flex; gap: 8px; align-items: center; margin-top: 14px
 #start-note .passed:empty { display: none; }
 .guide .check .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 ul.checks li.restore { color: var(--danger-text); font-weight: 600; }
+/* More context: why a step matters, collapsed under the tasks */
+.guide details.context { margin-top: 10px; border-top: 1px solid var(--rule); padding-top: 8px; }
+.guide details.context summary { cursor: pointer; color: var(--link); font-size: 13px; font-weight: 500; }
+.guide details.context p { margin: 6px 0 0; color: var(--ink2); font-size: 13px; line-height: 1.45; }
+ul.checks li.info { color: var(--ink); }
+ul.checks li.info .dot { width: 18px; flex: none; text-align: center; color: var(--muted); }
+.guide ul.tasks { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.4; }

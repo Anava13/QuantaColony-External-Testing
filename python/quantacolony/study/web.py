@@ -632,17 +632,18 @@ class WebStudy:
         """The guide's current step with a checkmark per bullet, or done once the practice plate is saved.
         open_sections: ids of the sections open on the page."""
         if self.practice_done:
-            return {"done": True, "goal": sm.GOAL, "colors": gd.COLORS}
+            return {"done": True, "goal": sm.GOAL, "colors": gd.COLORS, "tasks": list(gd.PLATE_TASKS)}
         facts = self._guide_facts(open_sections)
         step = gd.STEPS[self.step]
-        bullets = [{"text": n.text, "anchor": n.anchor, "done": n.met(facts)} for n in step.needs]
+        bullets = [{"text": n.text, "anchor": n.anchor, "done": n.met(facts), "info": n.check is None}
+                   for n in step.needs]
         met = step.met(facts)
         changes = gd.settings_changes(self.session.params) if step.tuned else []
         if changes:                                    # the lesson's settings first, each change named
-            listed = "; ".join(f"{label} back to {want} (now {now})" for label, now, want, _ in changes)
-            text = f"Return the Step 1 settings to the lesson's values: {listed}"
+            listed = "; ".join(f"{label} to {want} (now {now})" for label, now, want, _ in changes)
+            text = f"First set back {listed}"
             if self.mode != "ModifyGlobalParameters":
-                text = "Choose Detect automatically, then return the Step 1 settings to the lesson's values: " + listed
+                text = f"First choose Detect automatically, then set back {listed}"
             anchor = "mode-ModifyGlobalParameters" if self.mode != "ModifyGlobalParameters" else changes[0][3]
             bullets = [{"text": text, "anchor": anchor, "done": False, "restore": True}] + bullets
             met = False
