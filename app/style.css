@@ -161,3 +161,4 @@ dialog .buttons { display: flex; gap: 8px; align-items: center; margin-top: 14px
 .guide .check button { align-self: flex-start; }
 #start-note .passed { margin: 0; color: var(--link); font-weight: 600; }
 #start-note .passed:empty { display: none; }
+.guide .check .buttons { display: flex; gap: 8px; flex-wrap: wrap; }

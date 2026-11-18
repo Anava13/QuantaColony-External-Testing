@@ -565,6 +565,12 @@ class WebStudy:
         self.feedback = {"flags": flags, "missed": missed}
         return dict(summary, problems=problems)
 
+    def clear_feedback(self) -> None:
+        """Clear problems: the check's marks leave the plate; the next Finish image checks again."""
+        if self.feedback is not None:
+            self.feedback = None
+            self._record("training_marks_cleared", attempt=self.attempts)
+
     def _reference_colonies(self) -> list:
         """[x, y, r] in crop pixels of every required colony (automated checks only)."""
         x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)

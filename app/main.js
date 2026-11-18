@@ -388,8 +388,9 @@ function renderCheck(guide) {
   const box = document.createElement("div");
   box.className = "check";
   box.innerHTML = `<h3></h3><ul class="shares"><li></li><li></li></ul><p class="small what"></p>
-    <p class="small">Orange outlines are wrong; magenta dashed circles are colonies to measure that have no outline.
-    The marks update when you press Finish image again.</p><button class="next-problem"></button>`;
+    <p class="small marks-note">Orange outlines are wrong; magenta dashed circles are colonies to measure that have no
+    outline. The marks update when you press Finish image again.</p>
+    <div class="buttons"><button class="next-problem"></button><button class="clear-problems">Clear problems</button></div>`;
   box.querySelector("h3").textContent = `Not passed yet (check ${c.attempt})`;
   const [a, b] = box.querySelectorAll(".shares li");
   a.textContent = `Colonies found: ${c.found} of ${c.required} (${pct(c.found_share)}); needed ${pct(c.found_min)}`;
@@ -408,6 +409,18 @@ function renderCheck(guide) {
   const problems = c.problems || [];
   next.textContent = problems.length ? `Show the next problem (1 of ${problems.length})` : "No problems to show";
   next.disabled = !problems.length;
+  const clear = box.querySelector(".clear-problems");
+  if (c.cleared) {                                            // marks cleared: the numbers stay, the stepping goes
+    box.querySelector(".marks-note").textContent = "Marks cleared. Press Finish image to check again.";
+    next.remove();
+    clear.remove();
+  }
+  clear.onclick = () => {
+    c.cleared = true;
+    state.engine.call("clear_feedback");
+    $("status").textContent = "Problem marks cleared.";
+    refresh();
+  };
   next.onclick = () => {
     const k = state.problem = ((state.problem ?? -1) + 1) % problems.length;
     const [x, y, r, label] = problems[k];
