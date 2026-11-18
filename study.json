@@ -1,6 +1,6 @@
 {
   "study_version": 1,
-  "bundle_version": 1,
+  "bundle_version": 2,
   "questions": [
     [
       "background",
@@ -37,7 +37,7 @@
       ]
     ]
   ],
-  "goal": "Draw one outline for every colony, on the colony's outer edge. Touching colonies are separate colonies: a mass of three touching colonies is three colonies, each with its own outline. Some plates show part of a dish: measure every colony in view, including colonies cut by the edge.",
+  "goal": "Draw one outline for every colony you can tell apart, on the colony's outer edge. Touching colonies are separate colonies: a mass of three touching colonies is three colonies, each with its own outline. Skip a mass of five or more colonies that you cannot tell apart. Plate numbers, bubbles, condensation, dust and shadows are not colonies. Some plates show part of a dish: measure every colony in view, including colonies cut by the edge.",
   "concepts": [
     {
       "file": "assets/concepts/mass_three.png",
@@ -53,6 +53,16 @@
       "file": "assets/concepts/edge.png",
       "title": "Where the edge is",
       "caption": "A colony's outline follows its outer edge, including the pale margin around the dark center."
+    },
+    {
+      "file": "assets/concepts/clump.png",
+      "title": "A mass you cannot separate",
+      "caption": "A mass of five or more colonies that you cannot tell apart is skipped: no outline. One outline around it counts as a wrong outline."
+    },
+    {
+      "file": "assets/concepts/objects.png",
+      "title": "Objects that are not colonies",
+      "caption": "Plate numbers written in marker, bubbles, condensation, dust and shadows at the dish edge are not colonies. Delete any outline on them."
     }
   ]
 }

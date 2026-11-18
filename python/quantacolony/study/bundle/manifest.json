@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "plates": [
     {
       "name": "practice",
@@ -73,15 +73,15 @@
   ],
   "target": {
     "colony_ids": [
-      5,
-      6,
-      7
+      23,
+      24,
+      25
     ],
     "center": [
-      320.4490950226244,
-      465.2024886877828
+      671.6508620689655,
+      308.7485632183908
     ],
-    "radius": 24.639020608495734
+    "radius": 24.025054906990995
   },
   "concepts": [
     {
@@ -98,6 +98,90 @@
       "file": "edge.png",
       "title": "Where the edge is",
       "caption": "A colony's outline follows its outer edge, including the pale margin around the dark center."
+    },
+    {
+      "file": "clump.png",
+      "title": "A mass you cannot separate",
+      "caption": "A mass of five or more colonies that you cannot tell apart is skipped: no outline. One outline around it counts as a wrong outline."
+    },
+    {
+      "file": "objects.png",
+      "title": "Objects that are not colonies",
+      "caption": "Plate numbers written in marker, bubbles, condensation, dust and shadows at the dish edge are not colonies. Delete any outline on them."
     }
-  ]
+  ],
+  "marks": {
+    "triple": {
+      "colony_ids": [
+        23,
+        24,
+        25
+      ],
+      "center": [
+        671.6508620689655,
+        308.7485632183908
+      ],
+      "radius": 24.025054906990995
+    },
+    "marker": {
+      "colony_ids": [],
+      "center": [
+        338.0,
+        576.0
+      ],
+      "radius": 43.865898028018385
+    },
+    "condensation": {
+      "colony_ids": [],
+      "center": [
+        367.0,
+        102.0
+      ],
+      "radius": 53.85828778541213
+    },
+    "bright": {
+      "colony_ids": [],
+      "center": [
+        255.34589370695892,
+        674.6266852092386
+      ],
+      "radius": 130.89215361258448
+    },
+    "faint": {
+      "colony_ids": [
+        96
+      ],
+      "center": [
+        376.604,
+        390.54
+      ],
+      "radius": 17.928181001749476
+    },
+    "snap": {
+      "colony_ids": [
+        16
+      ],
+      "center": [
+        64.69354838709677,
+        487.91315136476425
+      ],
+      "radius": 25.349083224267094
+    },
+    "clump": {
+      "colony_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "center": [
+        579.2234762979684,
+        421.8773513920241
+      ],
+      "radius": 29.69557363432613
+    }
+  }
 }

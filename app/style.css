@@ -151,3 +151,13 @@ dialog .buttons { display: flex; gap: 8px; align-items: center; margin-top: 14px
 #btn-send { align-self: flex-start; }
 #plate-large { max-width: 92vw; max-height: 94vh; padding: 10px; }
 #plate-large img { max-width: 88vw; max-height: 82vh; display: block; margin-bottom: 8px; }
+
+/* training check */
+.guide .check { margin-top: 10px; border-top: 1px solid var(--rule); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.guide .check h3 { margin: 0; font-size: 15px; color: var(--danger-text); }
+.guide .check ul.shares { margin: 0; padding-left: 18px; }
+.guide .check li.ok { color: var(--link); }
+.guide .check li.short { color: var(--danger-text); font-weight: 600; }
+.guide .check button { align-self: flex-start; }
+#start-note .passed { margin: 0; color: var(--link); font-weight: 600; }
+#start-note .passed:empty { display: none; }

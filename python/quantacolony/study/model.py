@@ -101,6 +101,8 @@ class Bundle:
     plates: tuple[BundlePlate, ...]
     target: Target | None
     concepts: tuple[Concept, ...]
+    marks: dict = field(default_factory=dict)     # name -> Target: the places the guide rings on the practice
+                                                  # plate (colony_ids empty for objects that are not colonies)
 
     @property
     def practice(self) -> BundlePlate:
@@ -119,6 +121,14 @@ class Bundle:
     def labels_path(self) -> Path:
         return self.folder / "practice_labels.png"
 
+    def artifacts_path(self) -> Path:
+        """The practice plate's objects that are not colonies (kind codes, study/score.py KIND_NAMES)."""
+        return self.folder / "practice_artifacts.png"
+
+    def truth_path(self) -> Path:
+        """The practice plate's truth table (required and optional colonies, study/score.py)."""
+        return self.folder / "practice_truth.csv"
+
 
 def load_bundle(folder: Path) -> Bundle:
     data = json.loads((Path(folder) / "manifest.json").read_text(encoding="utf-8"))
@@ -128,13 +138,17 @@ def load_bundle(folder: Path) -> Bundle:
     target = Target(tuple(int(i) for i in t["colony_ids"]), tuple(map(float, t["center"])), float(t["radius"])) \
         if t else None
     concepts = tuple(Concept(c["file"], c["title"], c["caption"]) for c in data.get("concepts", ()))
-    return Bundle(Path(folder), int(data["version"]), plates, target, concepts)
+    marks = {name: Target(tuple(int(i) for i in m["colony_ids"]), tuple(map(float, m["center"])), float(m["radius"]))
+             for name, m in data.get("marks", {}).items()}
+    return Bundle(Path(folder), int(data["version"]), plates, target, concepts, marks)
 
 
-def manifest(version: int, plates: list[BundlePlate], target: Target | None, concepts: list[Concept]) -> dict:
+def manifest(version: int, plates: list[BundlePlate], target: Target | None, concepts: list[Concept],
+             marks: dict | None = None) -> dict:
     """The manifest.json content for a bundle (written by tools/study/build_bundle.py)."""
     return {"version": version, "plates": [asdict(p) for p in plates],
-            "target": asdict(target) if target else None, "concepts": [asdict(c) for c in concepts]}
+            "target": asdict(target) if target else None, "concepts": [asdict(c) for c in concepts],
+            "marks": {name: asdict(m) for name, m in (marks or {}).items()}}
 
 
 # ======================================================================================
@@ -168,18 +182,21 @@ class Step:
         return self.check is not None and bool(self.check(facts))
 
 
-GOAL = ("Draw one outline for every colony, on the colony's outer edge. Touching colonies are separate "
-        "colonies: a mass of three touching colonies is three colonies, each with its own outline. Some plates "
-        "show part of a dish: measure every colony in view, including colonies cut by the edge.")
+GOAL = ("Draw one outline for every colony you can tell apart, on the colony's outer edge. Touching colonies are "
+        "separate colonies: a mass of three touching colonies is three colonies, each with its own outline. Skip a "
+        "mass of five or more colonies that you cannot tell apart. Plate numbers, bubbles, condensation, dust and "
+        "shadows are not colonies. Some plates show part of a dish: measure every colony in view, including "
+        "colonies cut by the edge.")
 
 # The note over the whole window once the practice plate is saved: each point is checked before the
 # first scored plate opens.
 START_NOTE = (
     "The accuracy test starts now. It asks whether typical users, like you, agree on colony measurements "
     "once they know the software.",
-    "Measure every colony on each plate, each with its own outline on its outer edge.",
-    "Watch for false detections: delete any outline that is not on a colony, or that covers more than one "
-    "colony.",
+    "Measure every colony you can tell apart on each plate, each with its own outline on its outer edge. "
+    "Skip masses of five or more colonies that you cannot tell apart.",
+    "Watch for false detections: delete any outline on something that is not a colony (plate numbers, bubbles, "
+    "condensation, dust), or that covers more than one colony.",
     "The six plates take about 15 minutes from here. Take the time to measure them carefully.",
 )
 

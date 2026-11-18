@@ -1,5 +1,7 @@
 """The browser study's guide on the practice plate (Qt-free): automatic detection first, one setting at a
-time from a poorly tuned start, then manual correction one tool at a time.
+time from a poorly tuned start, then manual correction one tool at a time, each on a part of the plate
+built for it (the bundle's marks: a plate number, condensation, a faint colony, a dark colony to snap to,
+the brighter side, a mass of three, an inseparable mass), then the training check (study/score.py).
 
     POOR            the practice plate's starting settings: each guided fix improves the detection
                     (on the practice plate: 5, then 22, 38, 62 and 85 of its 100 colonies)
@@ -50,8 +52,13 @@ class GuideFacts:
     region_tuned: bool = False             # a setting changed while a region was previewed
     added_region: bool = False             # an addition in Detect in a region
     undone: bool = False
+    redone: bool = False
     mass_unmerged: bool = False            # no outline covers two colonies of the ringed mass
     mass_resolved: bool = False            # each colony of the mass has its own outline
+    marker_clear: bool = False             # no outline centered on the ringed plate number
+    condensation_clear: bool = False       # no outline centered on the ringed condensation
+    faint_added: bool = False              # the ringed faint colony has its own outline
+    clump_unmerged: bool = False           # no outline covers two colonies of the inseparable mass
     saved: bool = False                    # the practice plate is saved
 
 
@@ -72,6 +79,7 @@ class GuideStep:
     text: str
     needs: tuple = ()
     hide_outlines: bool = False            # the photo without any outlines
+    ring: str = ""                         # the bundle mark ringed on the plate during this step
 
     def met(self, facts: GuideFacts) -> bool:
         return all(n.met(facts) for n in self.needs)
@@ -83,8 +91,9 @@ def opened(section: str):
 
 STEPS = (
     GuideStep("photo", "The practice plate",
-              "This plate is for practice and is not part of the results. Each dark spot is a colony. Your task on "
-              "every plate is to give each colony its own outline, on its outer edge. Scroll to zoom; drag with "
+              "This plate is for practice and is not part of the results. Most dark spots are colonies; a few "
+              "things on it are not. Your task on every plate is to give each colony you can tell apart its own "
+              "outline, on its outer edge. Scroll to zoom; drag with "
               "the middle button, or hold Space and drag, to move around.", hide_outlines=True),
     GuideStep("detection", "Step 1 · Automatic detection",
               "The program outlines colonies on its own, using the settings under Step 1. These settings are "
@@ -128,71 +137,93 @@ STEPS = (
               (Need("Open Touching colonies", "sec-split", opened("sec-split")),
                Need("Turn on Split touching colonies, then look at the purple outlines", "ctl-split",
                     lambda f: f.params.split))),
-    GuideStep("estimate", "Estimate settings",
-              "Estimate settings reads the photo and sets all of these at once. Every plate in the study starts "
-              "from its own estimate, so on most plates the settings only need small changes.",
-              (Need("Press Estimate settings", "btn-estimate", lambda f: f.estimated),)),
     GuideStep("manual", "Step 2 · Manual correction",
               "Automatic detection misses some colonies and outlines some things that are not colonies. The four "
-              "tools under Step 2 fix the outlines one by one or a region at a time.",
+              "tools under Step 2 fix the outlines one by one or a region at a time. Each of the next steps uses "
+              "one tool on a ringed part of the plate.",
               (Need("Open Step 2 · Manual correction on the left", "grp-manual", opened("grp-manual")),)),
     GuideStep("delete", "Delete colonies",
-              "Removes outlines you click: an outline on agar, on a mark, or around more than one colony.",
+              "The ringed mark is a plate number written in marker on the underside of the dish. It is not a "
+              "colony, nor are bubbles in the agar (small rings) or specks of dust. Delete colonies removes "
+              "outlines you click.",
               (Need("Choose Delete colonies", "mode-DeleteIndividualColonies",
                     lambda f: f.mode == "DeleteIndividualColonies" or f.deleted_one),
-               Need("Click an outline to select it (it turns red)", "plate", lambda f: f.selected_click),
-               Need("Press Delete colonies", "btn-delete", lambda f: f.deleted_one))),
+               Need("Click each outline on the ringed number (it turns red)", "plate",
+                    lambda f: f.selected_click or f.marker_clear),
+               Need("Press Delete colonies, until no outline is left on the number", "btn-delete",
+                    lambda f: f.deleted_one and f.marker_clear)), ring="marker"),
     GuideStep("delete_region", "Delete a region",
-              "Removes every outline inside a box, for an area full of false outlines.",
+              "The ringed patch is condensation: water droplets on the lid. Delete a region removes every "
+              "outline inside a box, for an area full of false outlines like this one.",
               (Need("Choose Delete a region", "mode-DeleteManyColonies",
                     lambda f: f.mode == "DeleteManyColonies" or f.deleted_box),
-               Need("Drag a box over a few outlines", "plate", lambda f: f.selected_box),
-               Need("Press Delete colonies", "btn-delete-region", lambda f: f.deleted_box))),
+               Need("Drag a box over the ringed patch", "plate", lambda f: f.selected_box or f.condensation_clear),
+               Need("Press Delete colonies, until no outline is left in the patch", "btn-delete-region",
+                    lambda f: f.deleted_box and f.condensation_clear)), ring="condensation"),
     GuideStep("add", "Add colonies",
-              "Draws a colony the program missed. Drag across the colony from one edge to the other: the drag is "
-              "its diameter. A drawn circle is white and dashed. It is not a colony yet and does not count. "
-              "Add colonies turns the drawn circles into colonies, outlined in lime, and the count goes up. "
-              "Drawn circles that are never added are left out of the results.",
+              "The ringed colony is faint, so the automatic detection misses it. Add colonies draws it: drag "
+              "across the colony from one edge to the other; the drag is its diameter. A drawn circle is white "
+              "and dashed. It is not a colony yet and does not count. Add colonies turns the drawn circles into "
+              "colonies, outlined in lime, and the count goes up. Drawn circles that are never added are left "
+              "out of the results.",
               (Need("Choose Add colonies", "mode-AddIndividualColonies",
                     lambda f: f.mode == "AddIndividualColonies" or f.added_one),
-               Need("Drag across a colony without an outline: a white dashed circle appears, and the count "
-                    "stays the same", "plate", lambda f: f.drew),
+               Need("Drag across the ringed colony: a white dashed circle appears, and the count stays the same",
+                    "plate", lambda f: f.drew),
                Need("Press Add colonies: the circle turns lime, and the count goes up", "btn-add",
-                    lambda f: f.added_one))),
+                    lambda f: f.added_one and f.faint_added)), ring="faint"),
     GuideStep("add_tools", "Snap and remove",
-              "Snap to colony edge fits each drawn circle to the colony's own outline. A right-click removes a "
-              "drawn circle before it is added.",
+              "Snap to colony edge fits each drawn circle to the colony's own outline. It needs a clear edge: "
+              "it works on dark colonies like the ringed one. On a faint colony it finds no edge and leaves the "
+              "circle as you drew it, so you size that circle by hand. A right-click removes a drawn circle "
+              "before it is added.",
               (Need("Turn on Snap to colony edge", "sw-contour", lambda f: f.contour_on or f.snapped),
-               Need("Drag across a colony and watch the circle snap to its edge", "plate", lambda f: f.snapped),
-               Need("Right-click the drawn circle to remove it", "plate", lambda f: f.removed_drawn))),
+               Need("Drag across the ringed colony and watch the circle snap to its edge", "plate",
+                    lambda f: f.snapped),
+               Need("Right-click the drawn circle to remove it", "plate", lambda f: f.removed_drawn)),
+              ring="snap"),
     GuideStep("region", "Detect in a region",
-              "Runs automatic detection inside a box only, for a patch the plate-wide settings miss. While this "
-              "tool is on, the Step 1 settings sit under it, and a change applies inside the box only.",
+              "Light falls unevenly on this plate: the ringed side is brighter, so its colonies look pale and the "
+              "plate-wide threshold misses them. Detect in a region runs automatic detection inside a box only. "
+              "While this tool is on, the Step 1 settings sit under it, and a change applies inside the box only.",
               (Need("Choose Detect in a region", "mode-AddManyColonies",
                     lambda f: f.mode == "AddManyColonies" or f.added_region),
-               Need("Drag a box over colonies without outlines", "plate", lambda f: f.region),
-               Need("Change a setting below it, such as Brightness threshold, and watch the outlines in the box "
-                    "change", "sec-threshold", lambda f: f.region_tuned or f.added_region),
-               Need("Press Add detected colonies", "btn-add-region", lambda f: f.added_region))),
-    GuideStep("undo", "Undo",
+               Need("Drag a box over the pale colonies on the ringed side", "plate", lambda f: f.region),
+               Need("Raise Brightness threshold below it until the pale colonies get outlines", "sec-threshold",
+                    lambda f: f.region_tuned or f.added_region),
+               Need("Press Add detected colonies", "btn-add-region", lambda f: f.added_region)), ring="bright"),
+    GuideStep("undo", "Undo and redo",
               "Every change can be undone, and redone, from the top bar or with Ctrl+Z and Ctrl+Y.",
-              (Need("Press Undo", "btn-undo", lambda f: f.undone),)),
-    GuideStep("mass", "A merged mass",
+              (Need("Press Undo: the colonies you just added disappear", "btn-undo", lambda f: f.undone),
+               Need("Press Redo to bring them back", "btn-redo", lambda f: f.undone and f.redone))),
+    GuideStep("mass", "A mass of three",
               "The ringed mass is three touching colonies. Measure it as three colonies.",
               (Need("Delete any outline that covers more than one of the three", "plate", lambda f: f.mass_unmerged),
-               Need("Give each of the three its own outline (Add colonies)", "plate", lambda f: f.mass_resolved))),
-    GuideStep("finish", "Finish the plate",
-              "Finish image saves a plate and opens the next one. Six plates follow, each starting from its own "
-              "estimate. On each, correct the outlines until every colony has its own, then press Finish image.",
-              (Need("Press Finish image to start the study", "btn-finish", lambda f: f.saved),)),
+               Need("Give each of the three its own outline (Add colonies)", "plate", lambda f: f.mass_resolved)),
+              ring="triple"),
+    GuideStep("skip", "A mass you cannot separate",
+              "The ringed mass holds about seven colonies that cannot be told apart. Skip masses of five or more "
+              "colonies like this one: leave them without outlines. One outline around the mass counts as a "
+              "wrong outline.",
+              (Need("Delete any outline that covers more than one colony of the ringed mass", "plate",
+                    lambda f: f.clump_unmerged),), ring="clump"),
+    GuideStep("finish", "Finish the practice plate",
+              "Correct the rest of the plate: every colony you can tell apart needs its own outline, and nothing "
+              "else should have one. Finish image then checks your outlines against the plate's true colonies. "
+              "To start the study, find at least 90% of the colonies you should measure, with at least 95% of your "
+              "outlines correct. You can correct and check again as often as you need.",
+              (Need("Press Finish image and pass the check", "btn-finish", lambda f: f.saved),)),
 )
 
 
-def facts_from(events, params: DetectionParams, open_sections, mode: str, mass: tuple[bool, bool],
+def facts_from(events, params: DetectionParams, open_sections, mode: str, places: dict,
                saved: bool, estimate_pressed: bool = False, contour_on: bool = False) -> GuideFacts:
     """GuideFacts from recorder events (core.benchmark.Event: kind, data) and the page's state.
-    mass: (no merged outline over the ringed mass, each of its colonies has its own outline).
+    places: the checks on the ringed parts of the plate (WebStudy._places): mass (no merged outline over
+    the triple, each of its colonies has its own outline), marker_clear, condensation_clear, faint_added,
+    clump_unmerged.
     estimate_pressed: the button was pressed; with settings already at the estimate, no detection runs."""
+    mass = places.get("mass", (False, False))
     detections = [e.data.get("params", {}) for e in events if e.kind == "detection"]
     edits = [e.data for e in events if e.kind == "edit"]
     selects = [e.data for e in events if e.kind == "select"]
@@ -216,4 +247,7 @@ def facts_from(events, params: DetectionParams, open_sections, mode: str, mass: 
         region=any(e.kind == "region_preview" for e in events),
         added_region=any(d.get("kind") == "Addition" and d.get("mode") == "AddManyColonies" for d in edits),
         undone=any(e.kind == "undo" for e in events),
-        mass_unmerged=mass[0], mass_resolved=mass[1], saved=saved)
+        redone=any(e.kind == "redo" for e in events),
+        mass_unmerged=mass[0], mass_resolved=mass[1], saved=saved,
+        marker_clear=places.get("marker_clear", False), condensation_clear=places.get("condensation_clear", False),
+        faint_added=places.get("faint_added", False), clump_unmerged=places.get("clump_unmerged", False))

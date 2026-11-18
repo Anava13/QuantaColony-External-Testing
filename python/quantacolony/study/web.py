@@ -23,6 +23,7 @@ Every method returns plain values (dicts, lists, numbers, bytes) for the page.
 
 from __future__ import annotations
 
+import csv
 import io
 import json
 import time
@@ -42,6 +43,7 @@ from ..core.session import DetectionSession, session_from_packet
 from . import guide as gd
 from . import model as sm
 from . import project as sp
+from . import score as sc
 
 SELECTION_TOLERANCE = 2.0          # gui/controller.py: click within 2 radii of a center
 MODES = ("ModifyGlobalParameters", "DeleteIndividualColonies", "DeleteManyColonies", "AddIndividualColonies",
@@ -54,6 +56,15 @@ class WebStudy:
         self.bundle = sm.load_bundle(Path(bundle_dir))
         self.work = Path(work_dir)
         self.labels = np.asarray(Image.open(self.bundle.labels_path())).astype(int)
+        self.kinds = np.asarray(Image.open(self.bundle.artifacts_path())) if self.bundle.artifacts_path().exists() \
+            else None
+        rows = list(csv.DictReader(open(self.bundle.truth_path(), encoding="utf-8"))) \
+            if self.bundle.truth_path().exists() else []
+        self.truth = {int(r["colony_id"]): (float(r["x_px"]), float(r["y_px"]), float(r["true_radius_px"]))
+                      for r in rows}
+        self.required = sc.required_colonies(rows)
+        self.feedback = None                       # the last failed training check: flags and missed colonies
+        self.attempts = 0
         self.manager = None
         self.participant = sm.Participant()
         self.session = None
@@ -188,7 +199,11 @@ class WebStudy:
                             "outline": [] if outline is None else np.round(outline, 1).ravel().tolist()})
         params = self.roi_params if (self.mode == REGION_MODE and self.roi_params is not None) else s.params
         color, threshold = threshold_from_level(params.level)
-        return {"colonies": colonies, "selected": sorted(self.selected_ids), "pending": pending,
+        feedback = self.feedback if self._is_practice() and not self.practice_done else None
+        present = {c["id"] for c in colonies}
+        flags = {str(i): v for i, v in (feedback or {}).get("flags", {}).items() if i in present}
+        return {"flags": flags, "missed": (feedback or {}).get("missed", []),
+                "colonies": colonies, "selected": sorted(self.selected_ids), "pending": pending,
                 "candidates": candidates, "roi": list(self.roi) if self.roi else None,
                 "rect": list(self.selection_rect) if self.selection_rect else None, "mode": self.mode,
                 "contour": self.contour, "count": len(s.colonies),
@@ -447,7 +462,14 @@ class WebStudy:
         self._say("Redo", f"{command.kind.lower()} of {command.count}")
 
     def finish_image(self) -> dict:
-        """Finish image (im_satisfied_pushed): save the plate with its record, open the next one."""
+        """Finish image (im_satisfied_pushed): save the plate with its record, open the next one. On the
+        practice plate the outlines are checked first (study/score.py); a plate that fails the check stays
+        open with feedback: {done: False, training: summary}."""
+        check = None
+        if self._is_practice() and not self.practice_done and self.truth:
+            check = self._training_check()
+            if not check["passed"]:
+                return {"done": False, "training": check}
         benchmark = self.recorder.finish(self.session.params) if self.recorder is not None else None
         revision = self.manager.commit_detection(self.session.result(), benchmark)
         self.session.mark_committed(revision)
@@ -463,7 +485,7 @@ class WebStudy:
         if not more and not sp.first_pass_path(self.manager).exists():
             self.manager.copy_open_project(sp.first_pass_path(self.manager))
             sp.stamp(self.manager, "first_pass_done")
-        return {"done": not more}
+        return {"done": not more, "training": check} if check else {"done": not more}
 
     def _log_save(self, value: str) -> None:
         """One entry per save in the study record's "processing" list, in the order saved."""
@@ -511,15 +533,72 @@ class WebStudy:
     def note_accepted(self) -> None:
         sp.stamp(self.manager, "start_note_accepted")
 
+    # ===== the training check (study/score.py) ======================================
+    def _is_practice(self) -> bool:
+        return self.session is not None and self.session.record.labels[0].value == sm.PRACTICE
+
+    def _training_check(self) -> dict:
+        """Score the practice plate's outlines; record the attempt; keep the feedback when it fails."""
+        x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
+        colonies = self.session.colonies
+        result = sc.score_plate(colonies.translated(x0, y0), self.labels, self.kinds, self.required)
+        self.attempts += 1
+        summary = {"attempt": self.attempts, "passed": result.passed, "found": result.required_found,
+                   "required": result.required_total, "found_share": round(result.found_share, 4),
+                   "correct": result.correct, "outlines": result.outlines,
+                   "correct_share": round(result.correct_share, 4), "found_min": sc.FOUND_MIN,
+                   "correct_min": sc.CORRECT_MIN, "false": dict(result.false_kinds),
+                   "merged": result.verdicts.count("merged"), "split": result.verdicts.count("split"),
+                   "missed": len(result.missed)}
+        self._record("training_check", **{k: v for k, v in summary.items() if k not in ("found_min", "correct_min")})
+        record = self.manager.study_record()
+        record.setdefault("training_attempts", []).append(dict(summary, time=sp.now()))
+        self.manager.save_study_record(record)
+        if result.passed:
+            self.feedback = None
+            return summary
+        flags = {int(colonies.ids[k]): v for k, v in enumerate(result.verdicts) if v != "correct"}
+        missed = [[self.truth[i][0] - x0, self.truth[i][1] - y0, self.truth[i][2]] for i in result.missed]
+        problems = [[float(colonies.centers[k, 0]), float(colonies.centers[k, 1]), float(colonies.radii[k]),
+                     feedback_label(v)] for k, v in enumerate(result.verdicts) if v != "correct"]
+        problems += [[m[0], m[1], m[2], "a colony to measure that has no outline"] for m in missed]
+        self.feedback = {"flags": flags, "missed": missed}
+        return dict(summary, problems=problems)
+
+    def _reference_colonies(self) -> list:
+        """[x, y, r] in crop pixels of every required colony (automated checks only)."""
+        x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
+        return [[x - x0, y - y0, r] for i, (x, y, r) in self.truth.items() if self.required.get(i)]
+
     # ===== the guide (study/guide.py) ================================================
+    def _places(self) -> dict:
+        """The checks on the ringed parts of the practice plate (guide.facts_from places)."""
+        if not self._is_practice():
+            return {}
+        x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
+        photo = self.session.colonies.translated(x0, y0)
+        marks = self.bundle.marks
+        out = {}
+        if self.bundle.target is not None:
+            out["mass"] = sm.target_status(photo, self.labels, self.bundle.target)
+
+        def clear(name):
+            m = marks.get(name)
+            if m is None or len(photo) == 0:
+                return True
+            d = np.hypot(photo.centers[:, 0] - m.center[0], photo.centers[:, 1] - m.center[1])
+            return not bool(np.any(d < m.radius))
+        out["marker_clear"] = clear("marker")
+        out["condensation_clear"] = clear("condensation")
+        if "faint" in marks:
+            out["faint_added"] = sm.target_status(photo, self.labels, marks["faint"])[1]
+        if "clump" in marks:
+            out["clump_unmerged"] = sm.target_status(photo, self.labels, marks["clump"])[0]
+        return out
+
     def _guide_facts(self, open_sections) -> gd.GuideFacts:
-        mass = (False, False)
-        practice = self.session is not None and self.session.record.labels[0].value == sm.PRACTICE
-        if practice and self.bundle.target is not None:
-            x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
-            mass = sm.target_status(self.session.colonies.translated(x0, y0), self.labels, self.bundle.target)
         events = self.recorder.log.events if self.recorder is not None else []
-        return gd.facts_from(events, self.session.params, list(open_sections or ()), self.mode, mass,
+        return gd.facts_from(events, self.session.params, list(open_sections or ()), self.mode, self._places(),
                              self.practice_done, self.estimate_pressed, self.contour)
 
     def tutorial(self, open_sections=()) -> dict:
@@ -533,7 +612,7 @@ class WebStudy:
         pointing = next((b["anchor"] for b in bullets if not b["done"]), "")
         return {"done": False, "number": self.step + 1, "total": len(gd.STEPS), "key": step.key, "title": step.title,
                 "text": step.text, "bullets": bullets, "met": step.met(facts), "anchor": pointing,
-                "hide_outlines": step.hide_outlines}
+                "hide_outlines": step.hide_outlines, "ring": self.ring(step.ring), "ring_name": step.ring}
 
     def pass_step(self, open_sections=()) -> None:
         """Next: only once every bullet of the step is checked."""
@@ -547,13 +626,16 @@ class WebStudy:
             self.skipped.append(gd.STEPS[self.step].key)
             self.step += 1
 
-    def target_ring(self) -> list:
-        """[cx, cy, r] of the tutorial's mass in crop pixels ([] outside the practice plate)."""
-        target = self.bundle.target
-        if target is None or self.session is None or self.session.record.labels[0].value != sm.PRACTICE:
+    def ring(self, name: str = "triple") -> list:
+        """[cx, cy, r] of a bundle mark in crop pixels ([] outside the practice plate or for no mark)."""
+        mark = self.bundle.marks.get(name) or (self.bundle.target if name == "triple" else None)
+        if mark is None or not self._is_practice():
             return []
         x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
-        return [target.center[0] - x0, target.center[1] - y0, target.radius]
+        return [mark.center[0] - x0, mark.center[1] - y0, mark.radius]
+
+    def target_ring(self) -> list:
+        return self.ring("triple")
 
     # ===== results ====================================================================
     def results(self, complete: bool = True) -> dict:
@@ -568,6 +650,18 @@ def describe_specs() -> str:
     """The settings' limits as JSON, for the page to build its controls before a plate opens."""
     return json.dumps({k: {"label": v.label, "min": v.minimum, "max": v.maximum, "step": v.step}
                        for k, v in PARAM_SPECS.items()})
+
+
+def feedback_label(verdict: str) -> str:
+    """Plain words for an outline the training check marks (study/score.py verdicts)."""
+    if verdict == "merged":
+        return "one outline over several colonies"
+    if verdict == "split":
+        return "a colony with more than one outline"
+    kind = verdict.split(":", 1)[1] if ":" in verdict else "agar"
+    return {"marker": "an outline on the plate number", "bubble": "an outline on a bubble",
+            "condensation": "an outline on condensation", "rim_shadow": "an outline on the dish edge's shadow",
+            "debris": "an outline on dust", "agar": "an outline on bare agar"}.get(kind, "a false outline")
 
 
 REVIEW_COLORS = {"manual": (123, 245, 1), "split": (156, 140, 255)}

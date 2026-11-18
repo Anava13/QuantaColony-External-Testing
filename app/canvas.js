@@ -3,7 +3,8 @@
 // Colors follow quantacolony/theme/tokens.py (ColonyColors).
 
 const COLORS = { detected: "#2EC8BB", split: "#9C8CFF", manual: "#7BF501", selected: "#FF6B5E",
-                 candidate: "#7BF501", drawn: "#ECEEE6", halo: "#0A0B09", ring: "#FF3DFF" };
+                 candidate: "#7BF501", drawn: "#ECEEE6", halo: "#0A0B09", ring: "#FF3DFF",
+                 flagged: "#FF9F1C", missed: "#FF3DFF" };
 const MAX_SCALE = 40;
 
 export class PlateView {
@@ -138,11 +139,14 @@ export class PlateView {
     if (v) {
       const selected = new Set(v.selected);
       const dimmed = v.mode === "AddManyColonies" && v.roi;
+      const flags = v.flags || {};
       for (const c of v.colonies) {
-        const color = selected.has(c.id) ? COLORS.selected : c.kind === "manual" ? COLORS.manual
+        const flagged = flags[c.id] !== undefined && !selected.has(c.id);
+        const color = selected.has(c.id) ? COLORS.selected : flagged ? COLORS.flagged : c.kind === "manual" ? COLORS.manual
           : c.kind === "split" ? COLORS.split : COLORS.detected;
-        this.shape(c, color, selected.has(c.id) ? 2.4 : 1.6, false, dimmed ? 0.35 : 1);
+        this.shape(c, color, selected.has(c.id) || flagged ? 2.4 : 1.6, false, dimmed ? 0.35 : 1);
       }
+      for (const [x, y, r] of v.missed || []) this.shape({ x, y, r: r + 2 }, COLORS.missed, 2, true, 1);   // training check
       for (const c of v.candidates) this.shape(c, COLORS.candidate, 1.8, true, 1);
       for (const c of v.pending) this.shape(c, COLORS.drawn, 1.8, true, 1);      // drawn, not added yet
       if (v.roi) this.box(v.roi[0], v.roi[1], v.roi[0] + v.roi[2], v.roi[1] + v.roi[3], "#ECEEE6");

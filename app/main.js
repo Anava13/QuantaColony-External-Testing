@@ -127,8 +127,8 @@ function refresh() {
   const v = state.view = state.engine.call("view");
   const t = state.guide = state.engine.call("tutorial", openSections());
   state.plateView.setView(t.hide_outlines ? { ...v, colonies: [], pending: [], candidates: [] } : v);
-  const ring = !t.done && t.key === "mass";                      // the ringed mass: its own step only
-  if (ring !== !!state.plateView.ring) state.plateView.setRing(ring ? state.engine.call("target_ring") : null);
+  const ring = !t.done && t.ring && t.ring.length ? t.ring : null;  // the step's ringed part of the plate
+  if (JSON.stringify(ring) !== JSON.stringify(state.plateView.ring)) state.plateView.setRing(ring);
   const p = state.plate;
   $("plate-label").textContent = p.practice ? "Practice plate"
     : `Plate ${p.number} of ${p.total}${p.reviewing ? " · changing after the review" : ""}`;
@@ -372,11 +372,51 @@ function renderGuide() {
   if (t.key !== "finish") button("Next", "primary", () => act("pass_step", openSections()), !t.met);
   if (!t.met && t.key !== "finish" && t.bullets.length) button("Skip this step", "link", () => act("skip_step"));
   point(t.anchor);
-  if (t.key === "mass" && state.zoomedTo !== "mass") {          // bring the ringed mass into view once
-    state.zoomedTo = "mass";
-    const ring = state.engine.call("target_ring");
-    if (ring.length) state.plateView.centerOn(ring[0], ring[1], 4 * state.plateView.fitScale);
+  if (t.ring && t.ring.length && state.zoomedTo !== t.key) {   // bring the step's ringed part into view once
+    state.zoomedTo = t.key;
+    const view = state.plateView, side = Math.min(view.canvas.clientWidth, view.canvas.clientHeight) || 600;
+    view.centerOn(t.ring[0], t.ring[1], Math.min(4 * view.fitScale, side / (3 * t.ring[2])));
   }
+  if (t.key === "finish" && state.check && !state.check.passed) renderCheck(guide);
+}
+
+// The training check's result under the finish step: the two shares against the cutoffs, what was
+// wrong, and a button that steps through the problems on the plate.
+function renderCheck(guide) {
+  const c = state.check;
+  const pct = v => `${Math.round(100 * v)}%`;
+  const box = document.createElement("div");
+  box.className = "check";
+  box.innerHTML = `<h3></h3><ul class="shares"><li></li><li></li></ul><p class="small what"></p>
+    <p class="small">Orange outlines are wrong; magenta dashed circles are colonies to measure that have no outline.
+    The marks update when you press Finish image again.</p><button class="next-problem"></button>`;
+  box.querySelector("h3").textContent = `Not passed yet (check ${c.attempt})`;
+  const [a, b] = box.querySelectorAll(".shares li");
+  a.textContent = `Colonies found: ${c.found} of ${c.required} (${pct(c.found_share)}); needed ${pct(c.found_min)}`;
+  b.textContent = `Outlines correct: ${c.correct} of ${c.outlines} (${pct(c.correct_share)}); needed ${pct(c.correct_min)}`;
+  a.className = c.found_share >= c.found_min ? "ok" : "short";
+  b.className = c.correct_share >= c.correct_min ? "ok" : "short";
+  const parts = [];
+  const names = { marker: "the plate number", bubble: "bubbles", condensation: "condensation", rim_shadow: "the dish edge's shadow",
+                  debris: "dust", agar: "bare agar" };
+  for (const [kind, n] of Object.entries(c.false)) if (n) parts.push(`${n} on ${names[kind] || kind}`);
+  if (c.merged) parts.push(`${c.merged} over several colonies`);
+  if (c.split) parts.push(`${c.split} on a colony that already has an outline`);
+  box.querySelector(".what").textContent = (parts.length ? `Wrong outlines: ${parts.join(", ")}. ` : "")
+    + (c.missed ? `Colonies with no outline: ${c.missed}.` : "");
+  const next = box.querySelector(".next-problem");
+  const problems = c.problems || [];
+  next.textContent = problems.length ? `Show the next problem (1 of ${problems.length})` : "No problems to show";
+  next.disabled = !problems.length;
+  next.onclick = () => {
+    const k = state.problem = ((state.problem ?? -1) + 1) % problems.length;
+    const [x, y, r, label] = problems[k];
+    const view = state.plateView;
+    view.centerOn(x, y, Math.max(3 * view.fitScale, Math.min(8 * view.fitScale, 60 / Math.max(r, 3))));
+    next.textContent = `Show the next problem (${(k + 1) % problems.length + 1} of ${problems.length})`;
+    $("status").textContent = `Problem ${k + 1} of ${problems.length}: ${label}.`;
+  };
+  guide.appendChild(box);
 }
 
 // The control the next unchecked bullet uses stays outlined; inside a collapsed group or section, the
@@ -409,13 +449,18 @@ async function finishPlate() {
   if (!(await settleUnadded("finish"))) return;
   const practice = state.plate.practice;
   const result = await busy(() => state.engine.call("finish_image"));
+  if (result.training) { state.check = result.training; state.problem = -1; }
+  if (practice && result.training && !result.training.passed) { refresh(); return; }
   if (result.done) { await openReview(); return; }
   await openPlate();
-  if (practice) showStartNote();
+  if (practice) showStartNote(result.training);
 }
 
 // ===== the note before the scored plates (study/model.py START_NOTE) ======================
-function showStartNote() {
+function showStartNote(check) {
+  $("note-passed").textContent = check
+    ? `You passed the training check: ${check.found} of ${check.required} colonies found, ${check.correct} of `
+      + `${check.outlines} outlines correct.` : "";
   const list = $("note-points");
   list.innerHTML = "";
   for (const text of state.engine.call("start_note")) {
