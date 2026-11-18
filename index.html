@@ -55,6 +55,8 @@
       <details class="group" id="grp-auto">
         <summary>Step 1 · Automatic detection</summary>
         <button class="mode" id="mode-ModifyGlobalParameters" data-mode="ModifyGlobalParameters"><span>Detect automatically</span><kbd>1</kbd></button>
+        <p id="settings-moved" class="hint hidden">While Detect in a region is on, these settings sit under it and
+          apply inside its box.</p>
         <div id="panel-settings" class="panel">
           <details class="sec" id="sec-appearance">
             <summary>Colony appearance</summary>
@@ -62,6 +64,8 @@
             <div class="seg" id="ctl-color"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
             <div class="ctl-title">Colony shape</div>
             <div class="seg" id="ctl-shape"><button data-v="Irregular">Irregular</button><button data-v="Circular">Circular</button></div>
+            <p class="hint">Circular fits a circle to each colony and errs toward missed colonies. Irregular follows
+              each colony's edge and errs toward false detections.</p>
           </details>
           <details class="sec" id="sec-threshold">
             <summary>Brightness threshold</summary>
@@ -108,14 +112,16 @@
           <button class="btn-clear">Clear box (Esc)</button>
         </div>
         <div id="panel-add" class="panel hidden">
-          <p class="hint">Drag across a colony from edge to edge. Drag a circle's middle to move it, its edge to
-            resize it; right-click removes it.</p>
-          <label class="switch"><input type="checkbox" id="ctl-contour"><span>Snap to colony edge</span></label>
+          <p class="hint">Drag across a colony from edge to edge. A drawn circle (white, dashed) counts only after
+            you press Add colonies. Drag a circle's middle to move it, its edge to resize it; right-click removes it.</p>
+          <label class="switch" id="sw-contour"><input type="checkbox" id="ctl-contour"><span>Snap to colony edge</span></label>
           <button id="btn-add" class="primary">Add colonies (Enter)</button>
           <button class="btn-clear">Clear circles (Esc)</button>
         </div>
         <div id="panel-region" class="panel hidden">
-          <p class="hint">Drag a box over missed colonies. The Step 1 settings apply inside the box only.</p>
+          <p class="hint">Drag a box over missed colonies. The settings below apply inside the box only; change them
+            until the outlines in the box match the colonies.</p>
+          <div id="region-settings"></div>
           <button id="btn-add-region" class="primary">Add detected colonies (Enter)</button>
           <button class="btn-clear">Clear region (Esc)</button>
         </div>
@@ -132,11 +138,26 @@
     <aside id="right">
       <div class="card"><span id="count" class="big">0</span> colonies<div id="count-detail" class="small"></div>
         <div class="legend"><span><i style="border-color:#2EC8BB"></i>detected</span><span><i style="border-color:#9C8CFF"></i>split from a mass</span>
-          <span><i style="border-color:#7BF501"></i>added by you</span><span><i style="border-color:#FF6B5E"></i>selected</span></div></div>
+          <span><i style="border-color:#7BF501"></i>added by you</span><span><i style="border-color:#FF6B5E"></i>selected</span>
+          <span><i class="dashed"></i>drawn, not added yet</span></div></div>
       <div id="status" class="small"></div>
       <div id="guide" class="card guide"></div>
       <button id="btn-stop" class="link">Stop the study and send what is done</button>
     </aside>
+  </section>
+
+  <!-- Review -->
+  <section id="screen-review" class="page hidden">
+    <div class="column wide">
+      <h1>Check your plates</h1>
+      <p class="lead">These are your six plates as you finished them. Look at each one: every colony should have its
+        own outline on its outer edge, with no outlines on anything else. Click a plate to see it larger. To change
+        a plate, press Change this plate, correct it, then press Finish image to come back here.</p>
+      <div id="review-grid"></div>
+      <label class="confirm"><input type="checkbox" id="review-ok"><span>I have checked all six plates, and I am satisfied
+        with them.</span></label>
+      <button id="btn-send" class="primary" disabled>Send my results</button>
+    </div>
   </section>
 
   <!-- End -->
@@ -151,6 +172,27 @@
   <!-- Loading -->
   <div id="loading" class="hidden"><div class="card"><div id="loading-text">Loading…</div><div class="bar"><div id="loading-bar"></div></div></div></div>
 </main>
+
+<dialog id="unadded">
+  <h2>Outlines not added</h2>
+  <p id="unadded-text"></p>
+  <div class="buttons">
+    <button class="primary" value="add">Add them to the colonies</button>
+    <button value="discard">Discard them</button>
+    <button value="back" class="link">Go back</button>
+  </div>
+</dialog>
+
+<dialog id="plate-large"><img alt=""><form method="dialog"><button class="primary">Close</button></form></dialog>
+
+<div id="start-note" class="hidden">
+  <div class="note">
+    <h2>The study starts now</h2>
+    <p class="small">Check each point to show you have read it.</p>
+    <ul id="note-points"></ul>
+    <button id="btn-note" class="primary" disabled>Start the study</button>
+  </div>
+</div>
 
 <dialog id="info">
   <h2>What is this for?</h2>

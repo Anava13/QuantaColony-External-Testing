@@ -172,6 +172,17 @@ GOAL = ("Draw one outline for every colony, on the colony's outer edge. Touching
         "colonies: a mass of three touching colonies is three colonies, each with its own outline. Some plates "
         "show part of a dish: measure every colony in view, including colonies cut by the edge.")
 
+# The note over the whole window once the practice plate is saved: each point is checked before the
+# first scored plate opens.
+START_NOTE = (
+    "The accuracy test starts now. It asks whether typical users, like you, agree on colony measurements "
+    "once they know the software.",
+    "Measure every colony on each plate, each with its own outline on its outer edge.",
+    "Watch for false detections: delete any outline that is not on a colony, or that covers more than one "
+    "colony.",
+    "The six plates take about 15 minutes from here. Take the time to measure them carefully.",
+)
+
 STEPS = (
     Step("plate", "The practice plate",
          "This plate is for practice and is not part of the results. The green outlines are the program's "

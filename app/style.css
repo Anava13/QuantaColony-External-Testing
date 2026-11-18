@@ -122,3 +122,32 @@ details.sec > *:not(summary) { margin-top: 6px; }
 .guide ul.checks li.next { color: var(--ink); font-weight: 600; }
 .guide ul.checks li.next .box { border-color: var(--pulse); }
 details.group .mode { width: 100%; margin-top: 4px; }
+
+/* drawn, not added yet */
+.legend i.dashed { border: 2px dashed #ECEEE6; }
+
+/* not-added warning */
+dialog .buttons { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+
+/* the note before the scored plates: over the whole window, everything behind it blurred */
+#start-note { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 21, 18, .55); backdrop-filter: blur(6px) grayscale(1); -webkit-backdrop-filter: blur(6px) grayscale(1); }
+#start-note .note { background: var(--surface); color: var(--ink); border-radius: 10px; padding: 24px 28px; max-width: 620px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 10px; }
+#start-note h2 { margin: 0; font-size: 20px; }
+#note-points { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+#note-points label { display: flex; gap: 10px; align-items: flex-start; line-height: 1.45; cursor: pointer; }
+#note-points input { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: #5C9E00; }
+#start-note button { align-self: flex-start; }
+
+/* review */
+.column.wide { max-width: 1180px; }
+#review-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; margin: 8px 0; }
+.review-card { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.review-card img { width: 100%; display: block; cursor: zoom-in; background: #0A0B09; }
+.review-card .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; }
+.confirm { display: flex; gap: 10px; align-items: center; font-weight: 500; }
+.confirm input { width: 18px; height: 18px; accent-color: #5C9E00; }
+#btn-send { align-self: flex-start; }
+#plate-large { max-width: 92vw; max-height: 94vh; padding: 10px; }
+#plate-large img { max-width: 88vw; max-height: 82vh; display: block; margin-bottom: 8px; }

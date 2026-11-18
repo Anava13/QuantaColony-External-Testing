@@ -1,4 +1,5 @@
-// The study page: form, what to measure, the practice plate with its guide, six plates, sending the results.
+// The study page: form, what to measure, the practice plate with its guide, the note before the scored
+// plates, six plates, the review of all six, sending the results.
 // Colony Detection's decisions run in Python (quantacolony/study/web.py, through bridge.js). This file
 // shows screens, turns mouse gestures into the same tool calls the desktop tools make
 // (quantacolony/gui/tools.py), and sends the results file.
@@ -25,7 +26,7 @@ const state = { study: null, engine: new Engine(), ready: false, name: "", answe
 
 // ===== screens ==========================================================================
 function show(id) {
-  for (const s of ["screen-form", "screen-concepts", "screen-detect", "screen-end"]) $(s).classList.toggle("hidden", s !== id);
+  for (const s of ["screen-form", "screen-concepts", "screen-detect", "screen-review", "screen-end"]) $(s).classList.toggle("hidden", s !== id);
   const detecting = id === "screen-detect";
   for (const b of ["btn-undo", "btn-redo", "btn-finish"]) $(b).classList.toggle("hidden", !detecting);
   if (!detecting) $("plate-label").textContent = "";
@@ -129,10 +130,11 @@ function refresh() {
   const ring = !t.done && t.key === "mass";                      // the ringed mass: its own step only
   if (ring !== !!state.plateView.ring) state.plateView.setRing(ring ? state.engine.call("target_ring") : null);
   const p = state.plate;
-  $("plate-label").textContent = p.practice ? "Practice plate" : `Plate ${p.number} of ${p.total}`;
+  $("plate-label").textContent = p.practice ? "Practice plate"
+    : `Plate ${p.number} of ${p.total}${p.reviewing ? " · changing after the review" : ""}`;
   for (const b of document.querySelectorAll(".mode")) b.classList.toggle("on", b.dataset.mode === v.mode);
   for (const [mode, panel] of Object.entries(PANELS)) $(panel).classList.toggle("hidden", mode !== v.mode);
-  if (v.mode === "AddManyColonies") $("panel-settings").classList.remove("hidden");
+  placeSettings(v.mode === "AddManyColonies");
   $("count").textContent = t.hide_outlines ? "–" : v.count;
   $("chip").textContent = t.hide_outlines ? "The practice plate" : CHIPS[v.mode];
   setControls(v.settings);
@@ -143,6 +145,17 @@ function refresh() {
   $("btn-undo").disabled = v.undo === 0;
   $("btn-redo").disabled = v.redo === 0;
   renderGuide();
+}
+
+// While Detect in a region is on, the settings sit under it (they apply inside its box); otherwise under
+// Step 1. Estimate settings works on the whole plate, so it stays out of the region's panel.
+function placeSettings(inRegion) {
+  const settings = $("panel-settings");
+  const home = inRegion ? $("region-settings") : $("grp-auto");
+  if (settings.parentElement !== home) home.appendChild(settings);
+  if (inRegion) settings.classList.remove("hidden");
+  $("btn-estimate").classList.toggle("hidden", inRegion);
+  $("settings-moved").classList.toggle("hidden", !inRegion);
 }
 
 // ===== settings controls ===============================================================
@@ -211,7 +224,32 @@ function wireControls() {
 }
 
 function act(name, ...args) { state.engine.call(name, ...args); refresh(); }
-function setMode(mode) { act("set_mode", mode); }
+async function setMode(mode) {
+  if (mode === state.view.mode) return;
+  if (await settleUnadded("mode")) act("set_mode", mode);
+}
+
+// Drawn circles and region outlines count only once added. Before Finish image or a tool change drops
+// them, ask: add them, discard them, or go back. Resolves true when the action can go ahead.
+async function settleUnadded(before) {
+  const u = state.engine.call("unadded");
+  const n = u.drawn + u.region;
+  if (!n) return true;
+  const what = u.drawn ? (u.drawn === 1 ? "1 drawn circle" : `${u.drawn} drawn circles`)
+                       : (u.region === 1 ? "1 outline found in the region" : `${u.region} outlines found in the region`);
+  $("unadded-text").textContent = `${what[0].toUpperCase() + what.slice(1)} ${n === 1 ? "is" : "are"} not added to the `
+    + `colonies yet, so ${n === 1 ? "it does" : "they do"} not count. Add ${n === 1 ? "it" : "them"} to the accepted `
+    + `detections before you ${before === "finish" ? "finish this plate" : "change tools"}?`;
+  const dialog = $("unadded");
+  const choice = await new Promise(resolve => {
+    for (const b of dialog.querySelectorAll("button")) b.onclick = () => { dialog.close(); resolve(b.value); };
+    dialog.oncancel = () => resolve("back");
+    dialog.showModal();
+  });
+  if (choice === "back") return false;
+  await busy(() => act("resolve_unadded", choice, before));
+  return true;
+}
 
 // ===== tools (quantacolony/gui/tools.py) ================================================
 const tools = {
@@ -225,7 +263,7 @@ const tools = {
     if (mode === "AddIndividualColonies") {
       const tolerance = state.plateView.screenToImage(EDGE_PX);
       const [index, part] = state.engine.call("hit_circle", x, y, tolerance);
-      if (button === "right") { if (index >= 0) act("remove_circle", index); return; }
+      if (button === "right") { if (index >= 0) act("remove_circle", index, "right"); return; }
       if (index >= 0) {
         const c = state.view.pending[index];
         state.gesture = { kind: part === "edge" ? "resize" : "move", index, x0: x, y0: y, cx: c.x, cy: c.y, r: c.r };
@@ -263,7 +301,7 @@ const tools = {
       return;
     }
     const moved = Math.hypot(x - g.x0, y - g.y0);
-    if (g.kind === "draw" && moved < state.plateView.screenToImage(2)) { act("remove_circle", g.index); return; }
+    if (g.kind === "draw" && moved < state.plateView.screenToImage(2)) { act("remove_circle", g.index, "click"); return; }
     const [cx, cy, r] = circleGeometry(g, x, y);
     busy(() => act("update_circle", g.index, cx, cy, r, true));
   },
@@ -282,6 +320,7 @@ function wireKeys() {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); act(e.shiftKey ? "redo" : "undo"); return; }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); act("redo"); return; }
     if (e.key >= "1" && e.key <= "5" && !e.ctrlKey && !e.metaKey) { setMode(Object.keys(PANELS)[Number(e.key) - 1]); return; }
+    if (!$("start-note").classList.contains("hidden")) return;
     if (e.key === "Escape") { act("clear"); return; }
     if ((e.key === "Delete" || e.key === "Backspace") && mode.startsWith("Delete")) { e.preventDefault(); act("delete_selected"); return; }
     if (e.key === "Enter" && mode.startsWith("Add")) { e.preventDefault(); busy(() => act("add_pending")); }
@@ -298,10 +337,13 @@ function renderGuide() {
     point("");
     const p = state.plate;
     guide.innerHTML = `<div class="step"></div><h2>Measure every colony</h2><p></p><p></p>` +
-      `<p>Press Finish image when the outlines match the colonies. The next plate opens on its own.</p>`;
+      `<p></p>`;
     guide.querySelector(".step").textContent = p.practice ? "" : `Plate ${p.number} of ${p.total}`;
     guide.querySelectorAll("p")[0].textContent = t.goal;
     guide.querySelectorAll("p")[1].textContent = t.colors;
+    guide.querySelectorAll("p")[2].textContent = p.reviewing
+      ? "Press Finish image when the outlines match the colonies to return to the review."
+      : "Press Finish image when the outlines match the colonies. The next plate opens on its own.";
     return;
   }
   guide.innerHTML = `<div class="step"></div><h2></h2><p class="text"></p><ul class="checks"></ul><div class="buttons"></div>`;
@@ -363,8 +405,62 @@ function anchorElement(anchor) {
 
 // ===== finishing ========================================================================
 async function finishPlate() {
+  if (!(await settleUnadded("finish"))) return;
+  const practice = state.plate.practice;
   const result = await busy(() => state.engine.call("finish_image"));
-  if (result.done) { await endStudy(true); return; }
+  if (result.done) { await openReview(); return; }
+  await openPlate();
+  if (practice) showStartNote();
+}
+
+// ===== the note before the scored plates (study/model.py START_NOTE) ======================
+function showStartNote() {
+  const list = $("note-points");
+  list.innerHTML = "";
+  for (const text of state.engine.call("start_note")) {
+    const li = document.createElement("li");
+    li.innerHTML = `<label><input type="checkbox"><span></span></label>`;
+    li.querySelector("span").textContent = text;
+    list.appendChild(li);
+  }
+  const boxes = [...list.querySelectorAll("input")];
+  const update = () => { $("btn-note").disabled = !boxes.every(b => b.checked); };
+  for (const b of boxes) b.onchange = update;
+  update();
+  $("btn-note").onclick = () => {
+    state.engine.call("note_accepted");
+    $("start-note").classList.add("hidden");
+  };
+  $("start-note").classList.remove("hidden");
+}
+
+// ===== the review before sending ===========================================================
+async function openReview() {
+  show("screen-review");
+  const plates = await busyPage("Preparing your plates…", () => state.engine.call("review"));
+  const grid = $("review-grid");
+  for (const old of grid.querySelectorAll("img")) URL.revokeObjectURL(old.src);
+  grid.innerHTML = "";
+  for (const p of plates) {
+    const card = document.createElement("div");
+    card.className = "review-card";
+    card.innerHTML = `<img alt=""><div class="row"><span></span><button>Change this plate</button></div>`;
+    const url = URL.createObjectURL(new Blob([p.image], { type: "image/jpeg" }));
+    const img = card.querySelector("img");
+    img.src = url;
+    img.alt = `Plate ${p.number}`;
+    img.onclick = () => { const big = $("plate-large"); big.querySelector("img").src = url; big.showModal(); };
+    card.querySelector("span").textContent = `Plate ${p.number} · ${p.count} colonies`;
+    card.querySelector("button").onclick = () => reopenPlate(p.value);
+    grid.appendChild(card);
+  }
+  $("review-ok").checked = false;
+  $("btn-send").disabled = true;
+}
+
+async function reopenPlate(value) {
+  show("screen-detect");
+  await busy(() => state.engine.call("reopen", value));
   await openPlate();
 }
 
@@ -410,6 +506,8 @@ async function main() {
   $("btn-start").onclick = start;
   $("btn-practice").onclick = startPractice;
   $("btn-download").onclick = download;
+  $("review-ok").onchange = e => { $("btn-send").disabled = !e.target.checked; };
+  $("btn-send").onclick = () => { state.engine.call("confirm_review"); endStudy(true); };
   $("btn-info").onclick = () => { $("info").showModal(); if (state.active) state.engine.call("info_opened"); };
   wireControls();
   wireKeys();

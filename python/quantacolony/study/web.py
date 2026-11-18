@@ -10,8 +10,13 @@ measured as on the desktop, and the results file is the same .qcproj with the sa
     WebStudy.plate          the plate shown: label, number, image size
     WebStudy.view           everything the canvas and the controls show
     WebStudy.<edits>        modes, settings, selections, circles, regions, undo, finish
-    WebStudy.tutorial       the practice plate's guide (study/model.py STEPS)
-    WebStudy.results        the zip to upload: <name>.qcproj and participant.json
+    WebStudy.tutorial       the practice plate's guide (study/guide.py STEPS)
+    WebStudy.unadded        drawn circles or region outlines not added yet (checked before Finish image)
+    WebStudy.review         every scored plate as finished, for the participant to confirm or reopen
+    WebStudy.results        the zip to upload: <name>.qcproj, the first-pass snapshot, participant.json
+
+The study record keeps every save in order ("processing": plate, its position, first pass or review,
+seconds open), so accuracy can be compared across a participant's positions in the sequence.
 
 Every method returns plain values (dicts, lists, numbers, bytes) for the page.
 """
@@ -20,10 +25,11 @@ from __future__ import annotations
 
 import io
 import json
+import time
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from ..core.benchmark import POINTER_EVERY_MS, SETTING_EVERY_MS, DetectionRecorder, params_data, reference_start
 from ..core.colony_set import ColonySet
@@ -63,6 +69,8 @@ class WebStudy:
         self.estimate_pressed = False              # Estimate settings pressed, even when nothing changed
         self.skipped: list[str] = []
         self.practice_done = False
+        self.reviewing = False                     # a plate reopened from the review
+        self.opened_at = 0.0                       # when the current plate opened (seconds, monotonic)
         self.status = ""
 
     # ===== what the reading pages show =================================================
@@ -137,6 +145,7 @@ class WebStudy:
         if not session.loaded_revision:
             self._record_detection("initial")
         self.mode = MODES[0]
+        self.opened_at = time.monotonic()
         self._record("mode", mode=self.mode)
         self._say("DetectionResults", (len(session.colonies), session.params))
 
@@ -146,7 +155,7 @@ class WebStudy:
         number = self.order.index(value) + 1 if value in self.order else 0
         rows, cols = record.image.shape[:2]
         return {"value": value, "label": record.labels[0].display, "number": number, "total": len(self.order),
-                "practice": value == sm.PRACTICE, "width": cols, "height": rows}
+                "practice": value == sm.PRACTICE, "reviewing": self.reviewing, "width": cols, "height": rows}
 
     def image_rgba(self) -> bytes:
         """The plate's crop as RGBA bytes (row-major), black outside the region."""
@@ -346,13 +355,16 @@ class WebStudy:
         if final and self.contour:
             circle = self._contour(circle)
         if final:
-            self._record("draw", circles=len(self.pending))
+            snapped = circle.contour is not None and circle.contour.found
+            self._record("draw", circles=len(self.pending), snapped=bool(snapped))
         self.pending[index] = circle
 
-    def remove_circle(self, index: int) -> None:
+    def remove_circle(self, index: int, how: str = "right") -> None:
+        """A drawn circle removed: a right-click on it ('right'), or a click too short to draw ('click')."""
         del self.pending[index]
-        self._record("draw", circles=len(self.pending))
-        self._say("CircleRemoved")
+        self._record("draw_removed", how=str(how), circles=len(self.pending))
+        if how == "right":
+            self._say("CircleRemoved")
 
     def set_contour(self, enabled: bool) -> None:
         """Snap to colony edge (controller_contour_circle)."""
@@ -398,6 +410,20 @@ class WebStudy:
         self.roi = None
         self._say("ColoniesAdded", (added, len(new) - added, len(self.session.colonies)))
 
+    def unadded(self) -> dict:
+        """Outlines drawn or found but not added to the colonies: {drawn, region}."""
+        return {"drawn": len(self.pending), "region": 0 if self.candidates is None else len(self.candidates)}
+
+    def resolve_unadded(self, choice: str, before: str) -> None:
+        """The participant's answer to the not-added warning before Finish image or a tool change
+        (before: 'finish' / 'mode'): 'add' adds them, 'discard' drops them; recorded either way."""
+        waiting = self.unadded()
+        self._record("unadded", choice=str(choice), before=str(before), **waiting)
+        if choice == "add":
+            self.add_pending()
+        elif choice == "discard":
+            self._clear_pending()
+
     # ===== undo, redo, finish =========================================================
     def undo(self) -> None:
         self._clear_pending()
@@ -422,11 +448,65 @@ class WebStudy:
         benchmark = self.recorder.finish(self.session.params) if self.recorder is not None else None
         revision = self.manager.commit_detection(self.session.result(), benchmark)
         self.session.mark_committed(revision)
-        if self.session.record.labels[0].value == sm.PRACTICE and not self.practice_done:
+        value = self.session.record.labels[0].value
+        self._log_save(value)
+        if value == sm.PRACTICE and not self.practice_done:
             self.practice_done = True
             sp.stamp(self.manager, "practice_saved", tutorial_skipped=list(self.skipped))
+        if self.reviewing:                             # back to the review
+            self.reviewing = False
+            return {"done": True}
         more = self.open_next()
+        if not more and not sp.first_pass_path(self.manager).exists():
+            self.manager.copy_open_project(sp.first_pass_path(self.manager))
+            sp.stamp(self.manager, "first_pass_done")
         return {"done": not more}
+
+    def _log_save(self, value: str) -> None:
+        """One entry per save in the study record's "processing" list, in the order saved."""
+        record = self.manager.study_record()
+        stage = "practice" if value == sm.PRACTICE else "review" if self.reviewing else "first"
+        record.setdefault("processing", []).append({
+            "plate": value, "position": self.order.index(value) + 1 if value in self.order else 0,
+            "pass": stage, "saved": sp.now(), "seconds_open": round(time.monotonic() - self.opened_at, 1),
+            "colonies": len(self.session.colonies)})
+        self.manager.save_study_record(record)
+
+    # ===== the review before sending =================================================
+    def review(self) -> list:
+        """Every scored plate as saved, in the participant's order: [{value, number, count, image (JPEG)}]."""
+        record = sp.stamp(self.manager, "review_opened")
+        record["review_views"] = int(record.get("review_views", 0)) + 1
+        self.manager.save_study_record(record)
+        plates = []
+        for index_id, value, _ in self._ordered_indices():
+            if value == sm.PRACTICE:
+                continue
+            packet = self.manager.checkout_image(index_id)
+            colonies = packet.saved.colonies if packet.saved is not None else ColonySet.empty()
+            plates.append({"value": value, "number": self.order.index(value) + 1, "count": len(colonies),
+                           "image": review_jpeg(packet.record.image, colonies)})
+        return plates
+
+    def reopen(self, value: str) -> None:
+        """Open a saved plate again from the review; Finish image saves it and returns to the review."""
+        index_id = next(i for i, v, _ in self._ordered_indices() if v == value)
+        self._bind(session_from_packet(self.manager.checkout_image(index_id)))
+        self.reviewing = True
+        record = self.manager.study_record()
+        record.setdefault("reopened", []).append({"plate": value, "time": sp.now()})
+        self.manager.save_study_record(record)
+
+    def confirm_review(self) -> None:
+        sp.stamp(self.manager, "review_confirmed")
+
+    # ===== the note before the scored plates =========================================
+    @staticmethod
+    def start_note() -> list:
+        return list(sm.START_NOTE)
+
+    def note_accepted(self) -> None:
+        sp.stamp(self.manager, "start_note_accepted")
 
     # ===== the guide (study/guide.py) ================================================
     def _guide_facts(self, open_sections) -> gd.GuideFacts:
@@ -437,7 +517,7 @@ class WebStudy:
             mass = sm.target_status(self.session.colonies.translated(x0, y0), self.labels, self.bundle.target)
         events = self.recorder.log.events if self.recorder is not None else []
         return gd.facts_from(events, self.session.params, list(open_sections or ()), self.mode, mass,
-                             self.practice_done, self.estimate_pressed)
+                             self.practice_done, self.estimate_pressed, self.contour)
 
     def tutorial(self, open_sections=()) -> dict:
         """The guide's current step with a checkmark per bullet, or done once the practice plate is saved.
@@ -485,6 +565,32 @@ def describe_specs() -> str:
     """The settings' limits as JSON, for the page to build its controls before a plate opens."""
     return json.dumps({k: {"label": v.label, "min": v.minimum, "max": v.maximum, "step": v.step}
                        for k, v in PARAM_SPECS.items()})
+
+
+REVIEW_COLORS = {"manual": (123, 245, 1), "split": (156, 140, 255)}
+DETECTED_COLOR = (46, 200, 187)
+
+
+def review_jpeg(image: np.ndarray, colonies, max_side: int = 1000) -> bytes:
+    """A plate with its colonies outlined in the page's colors, at most max_side pixels on a side (JPEG)."""
+    rows, cols = image.shape[:2]
+    scale = min(1.0, max_side / max(rows, cols))
+    picture = Image.fromarray(np.ascontiguousarray(image[..., :3]))
+    if scale < 1:
+        picture = picture.resize((max(1, round(cols * scale)), max(1, round(rows * scale))), Image.LANCZOS)
+    draw = ImageDraw.Draw(picture)
+    for k in range(len(colonies)):
+        color = REVIEW_COLORS.get(str(colonies.kinds[k]), DETECTED_COLOR)
+        boundary = colonies.boundaries[k]
+        if boundary is not None and len(boundary) > 2:
+            points = [(float(x) * scale, float(y) * scale) for x, y in np.asarray(boundary)]
+            draw.line(points + points[:1], fill=color, width=2)
+        else:
+            x, y, r = (float(v) * scale for v in (colonies.centers[k, 0], colonies.centers[k, 1], colonies.radii[k]))
+            draw.ellipse((x - r, y - r, x + r, y + r), outline=color, width=2)
+    buffer = io.BytesIO()
+    picture.save(buffer, "JPEG", quality=90)
+    return buffer.getvalue()
 
 
 def png_bytes(rgb: np.ndarray) -> bytes:

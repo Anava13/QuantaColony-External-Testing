@@ -318,6 +318,13 @@ class DataManager:
         except FileProblem as error:
             raise ProjectError(str(error)) from error
 
+    def copy_open_project(self, destination: Path) -> Path:
+        """A consistent copy of the open project file (SQLite backup), e.g. a snapshot kept beside it."""
+        self._require_open()
+        from .store.project_file import copy_database
+        copy_database(self._file.connection, Path(destination))
+        return Path(destination)
+
     def import_project_file(self, source: Path) -> str:
         """Copy a shared .qcproj into the library; returns its project id. A project already in the
         library is imported as a copy with a new id."""

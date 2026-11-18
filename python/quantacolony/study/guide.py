@@ -2,7 +2,7 @@
 time from a poorly tuned start, then manual correction one tool at a time.
 
     POOR            the practice plate's starting settings: each guided fix improves the detection
-                    (on the practice plate: 5, then 22, 30, 38, 62 and 85 of its 100 colonies)
+                    (on the practice plate: 5, then 22, 38, 62 and 85 of its 100 colonies)
     Need            one bullet of a step: its text, the control it points at, and its check
     GuideStep       a step: title, explanation, bullets; done when every bullet is checked
     STEPS           the guide, in order
@@ -24,7 +24,8 @@ POOR = DetectionParams(level=0.25, sense=0.5, rmin=3.0, rmax=8.0, maxpix=300.0, 
                        split=False)
 
 COLORS = ("Teal outlines are colonies the program detected; purple ones were cut from a mass of touching "
-          "colonies; lime ones are colonies you added; red ones are selected.")
+          "colonies; lime ones are colonies you added; red ones are selected. White dashed circles are drawn "
+          "but not added yet, and do not count.")
 
 
 @dataclass(frozen=True)
@@ -40,8 +41,12 @@ class GuideFacts:
     deleted_one: bool = False              # a deletion in Delete colonies
     deleted_box: bool = False              # a deletion in Delete a region
     drew: bool = False                     # a circle drawn in Add colonies
+    contour_on: bool = False               # Snap to colony edge is on
+    snapped: bool = False                  # a drawn circle was fitted to a colony's edge
+    removed_drawn: bool = False            # a drawn circle was removed with a right-click
     added_one: bool = False                # an addition in Add colonies
     region: bool = False                   # a region previewed in Detect in a region
+    region_tuned: bool = False             # a setting changed while a region was previewed
     added_region: bool = False             # an addition in Detect in a region
     undone: bool = False
     mass_unmerged: bool = False            # no outline covers two colonies of the ringed mass
@@ -115,8 +120,9 @@ STEPS = (
                Need("Turn on Split touching colonies, then look at the purple outlines", "ctl-split",
                     lambda f: f.params.split))),
     GuideStep("shape", "Colony shape",
-              "Irregular follows each colony's own edge; Circular fits a circle to each colony. Irregular suits "
-              "these plates.",
+              "Circular fits a circle to each colony and errs toward missing colonies. Irregular follows each "
+              "colony's own edge and errs toward outlining things that are not colonies, which you then delete. "
+              "Irregular suits these plates.",
               (Need("Choose Circular and compare the outlines", "ctl-shape", lambda f: f.seen_circular),
                Need("Choose Irregular again", "ctl-shape",
                     lambda f: f.seen_circular and f.params.detection_type == "Irregular"))),
@@ -142,17 +148,29 @@ STEPS = (
                Need("Press Delete colonies", "btn-delete-region", lambda f: f.deleted_box))),
     GuideStep("add", "Add colonies",
               "Draws a colony the program missed. Drag across the colony from one edge to the other: the drag is "
-              "its diameter.",
+              "its diameter. A drawn circle is white and dashed. It is not a colony yet and does not count. "
+              "Add colonies turns the drawn circles into colonies, outlined in lime, and the count goes up. "
+              "Drawn circles that are never added are left out of the results.",
               (Need("Choose Add colonies", "mode-AddIndividualColonies",
                     lambda f: f.mode == "AddIndividualColonies" or f.added_one),
-               Need("Drag across a colony without an outline", "plate", lambda f: f.drew),
-               Need("Press Add colonies", "btn-add", lambda f: f.added_one))),
+               Need("Drag across a colony without an outline: a white dashed circle appears, and the count "
+                    "stays the same", "plate", lambda f: f.drew),
+               Need("Press Add colonies: the circle turns lime, and the count goes up", "btn-add",
+                    lambda f: f.added_one))),
+    GuideStep("add_tools", "Snap and remove",
+              "Snap to colony edge fits each drawn circle to the colony's own outline. A right-click removes a "
+              "drawn circle before it is added.",
+              (Need("Turn on Snap to colony edge", "sw-contour", lambda f: f.contour_on or f.snapped),
+               Need("Drag across a colony and watch the circle snap to its edge", "plate", lambda f: f.snapped),
+               Need("Right-click the drawn circle to remove it", "plate", lambda f: f.removed_drawn))),
     GuideStep("region", "Detect in a region",
-              "Runs automatic detection inside a box only, with its own settings, for a patch the plate-wide "
-              "settings miss.",
+              "Runs automatic detection inside a box only, for a patch the plate-wide settings miss. While this "
+              "tool is on, the Step 1 settings sit under it, and a change applies inside the box only.",
               (Need("Choose Detect in a region", "mode-AddManyColonies",
                     lambda f: f.mode == "AddManyColonies" or f.added_region),
                Need("Drag a box over colonies without outlines", "plate", lambda f: f.region),
+               Need("Change a setting below it, such as Brightness threshold, and watch the outlines in the box "
+                    "change", "sec-threshold", lambda f: f.region_tuned or f.added_region),
                Need("Press Add detected colonies", "btn-add-region", lambda f: f.added_region))),
     GuideStep("undo", "Undo",
               "Every change can be undone, and redone, from the top bar or with Ctrl+Z and Ctrl+Y.",
@@ -169,13 +187,14 @@ STEPS = (
 
 
 def facts_from(events, params: DetectionParams, open_sections, mode: str, mass: tuple[bool, bool],
-               saved: bool, estimate_pressed: bool = False) -> GuideFacts:
+               saved: bool, estimate_pressed: bool = False, contour_on: bool = False) -> GuideFacts:
     """GuideFacts from recorder events (core.benchmark.Event: kind, data) and the page's state.
     mass: (no merged outline over the ringed mass, each of its colonies has its own outline).
     estimate_pressed: the button was pressed; with settings already at the estimate, no detection runs."""
     detections = [e.data.get("params", {}) for e in events if e.kind == "detection"]
     edits = [e.data for e in events if e.kind == "edit"]
     selects = [e.data for e in events if e.kind == "select"]
+    regions = {repr(sorted(e.data.get("params", {}).items())) for e in events if e.kind == "region_preview"}
     return GuideFacts(
         params=params, open=frozenset(open_sections), mode=mode,
         seen_light=any(float(p.get("level", 1)) < 0 for p in detections),
@@ -187,6 +206,10 @@ def facts_from(events, params: DetectionParams, open_sections, mode: str, mass: 
         deleted_one=any(d.get("kind") == "Deletion" and d.get("mode") == "DeleteIndividualColonies" for d in edits),
         deleted_box=any(d.get("kind") == "Deletion" and d.get("mode") == "DeleteManyColonies" for d in edits),
         drew=any(e.kind == "draw" for e in events),
+        contour_on=contour_on,
+        snapped=any(e.kind == "draw" and e.data.get("snapped") for e in events),
+        removed_drawn=any(e.kind == "draw_removed" and e.data.get("how") == "right" for e in events),
+        region_tuned=len(regions) >= 2,
         added_one=any(d.get("kind") == "Addition" and d.get("mode") == "AddIndividualColonies" for d in edits),
         region=any(e.kind == "region_preview" for e in events),
         added_region=any(d.get("kind") == "Addition" and d.get("mode") == "AddManyColonies" for d in edits),

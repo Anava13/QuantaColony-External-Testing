@@ -3,7 +3,7 @@
 // Colors follow quantacolony/theme/tokens.py (ColonyColors).
 
 const COLORS = { detected: "#2EC8BB", split: "#9C8CFF", manual: "#7BF501", selected: "#FF6B5E",
-                 candidate: "#7BF501", halo: "#0A0B09", ring: "#FF3DFF" };
+                 candidate: "#7BF501", drawn: "#ECEEE6", halo: "#0A0B09", ring: "#FF3DFF" };
 const MAX_SCALE = 40;
 
 export class PlateView {
@@ -144,7 +144,7 @@ export class PlateView {
         this.shape(c, color, selected.has(c.id) ? 2.4 : 1.6, false, dimmed ? 0.35 : 1);
       }
       for (const c of v.candidates) this.shape(c, COLORS.candidate, 1.8, true, 1);
-      for (const c of v.pending) this.shape(c, COLORS.manual, 1.8, false, 1);
+      for (const c of v.pending) this.shape(c, COLORS.drawn, 1.8, true, 1);      // drawn, not added yet
       if (v.roi) this.box(v.roi[0], v.roi[1], v.roi[0] + v.roi[2], v.roi[1] + v.roi[3], "#ECEEE6");
       if (v.rect) this.box(...v.rect, COLORS.selected);
     }

@@ -34,7 +34,7 @@
     "quantacolony/data/derived.py": "df6ebb83f9b6fd789a8f2c2198813acb3e062c24378b72c1ed4fc6bc1bfe4793",
     "quantacolony/data/exports.py": "572517ecfb98d20458198be9da011e8c3b8a264318900437e982a12d8d324536",
     "quantacolony/data/library.py": "1a4f942d0df5bd7e8e3ecc4d71813afa2e4d166b8ed7e85fe8f893a2e4837dc2",
-    "quantacolony/data/manager.py": "8fe794b3eb32fd8b4ffb411fb8da11c150aeabbfcf9ca2804b46d99680c636b4",
+    "quantacolony/data/manager.py": "e7bcec8667f9bdf9d27c24319f2a86c8b5216d2c08d839e31ccc5051b7ef2b07",
     "quantacolony/data/packets.py": "cf5782ee3e7cc02074e046b8b6fa3d1fd177f3e4d965eb1a15036e0e0b81a6ef",
     "quantacolony/data/regions.py": "f4dbfd58e14bbfd3e3642b584ff4f747aa76603af3c281232c3d185c11dbf6a9",
     "quantacolony/data/schema.py": "51db013835992826a35a39c20cbf5e5316dc7cd49be731ac815c64ee2e1f16d0",
@@ -63,9 +63,9 @@
     "quantacolony/study/bundle/photos/study_05.png": "8f715160f936817a5c188356b6d05eb51a472794213b1d1f2bc1ccd000b57cb7",
     "quantacolony/study/bundle/photos/study_06.png": "db8c53b27a879c625a15ffccd64fb42f4d40944789e2dece3b022c0d0ebf1418",
     "quantacolony/study/bundle/practice_labels.png": "1dc8dcf2e113ec3191335b22264fb65377905d02c7e1e6c4d4b2d69a922daa82",
-    "quantacolony/study/guide.py": "045e78db5800728fb92d59cdbd1e364d44450a5f984452ead2db594fe0a1c86a",
-    "quantacolony/study/model.py": "2cf2212b1999f3453f55c4ec1cb855c669d2c1b8002b9fa303c9f867c0336f2c",
-    "quantacolony/study/project.py": "d630b49547424600e154ae78170c56c27e9f3b899f0a9d490a145246b715683f",
-    "quantacolony/study/web.py": "55b2301e56ebe2e7af2db949acbb73529dc9a849f95d11bb451d6b444a68e6ca"
+    "quantacolony/study/guide.py": "64210dc906f818b3764a7267305897615e2e4fbee7cfa5dc75b3e26c4289799c",
+    "quantacolony/study/model.py": "033c3d7d484a017ccf341b389d0eb53244f4e3477fd72aca72df10d5dd5b988b",
+    "quantacolony/study/project.py": "6b3373e4c9668b38fc02c0fbe60bf0b63a5ff84375be9a80075af015a5305193",
+    "quantacolony/study/web.py": "4371827eeca9e74cf26f5ab2b181f53ecc3358949f1e3348672636bd95089236"
   }
 }

@@ -9,7 +9,9 @@ The project records benchmark data (core/benchmark.py) and starts every plate fr
     create_project     the participant's project, open in the manager
     crop_offset        photo pixel of a plate's crop origin (the tutorial check works in photo pixels)
     stamp              add a stage time to the study record
-    write_results      close the project and write <name>_<date>.zip: the project and participant.json
+    first_pass_path    where the snapshot of every plate as first finished is kept (before the review)
+    write_results      close the project and write <name>_<date>.zip: the project, the first-pass
+                       snapshot when there is one, and participant.json
 """
 
 from __future__ import annotations
@@ -114,14 +116,23 @@ def results_folder() -> Path:
     return desktop if desktop.is_dir() else home
 
 
+def first_pass_path(manager: DataManager) -> Path:
+    """The snapshot of the project when the last plate was first finished, beside the project file."""
+    project = Path(manager.project_path)
+    return project.with_name(project.stem + " - first pass.qcproj")
+
+
 def write_results(manager: DataManager, participant: Participant, folder: Path | None = None) -> Path:
     """Close the project and zip it with participant.json (the study record, readable without opening
     the project). Returns the zip's path."""
     record = stamp(manager, "finished")
     project = Path(manager.project_path)
+    first = first_pass_path(manager)
     manager.close()
     target = Path(folder or results_folder()) / results_name(participant)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.write(project, f"{participant.file_stem()}.qcproj")
+        if first.exists():
+            archive.write(first, f"{participant.file_stem()} - first pass.qcproj")
         archive.writestr("participant.json", json.dumps(record, indent=2, ensure_ascii=False))
     return target
