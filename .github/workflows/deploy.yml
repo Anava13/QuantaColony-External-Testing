@@ -68,7 +68,7 @@ jobs:
           mkdir _site
           cp -r index.html app assets study.json _site/
           (cd python && zip -qr ../_site/python.zip quantacolony)
-          printf 'window.STUDY_CONFIG = { uploadUrl: "%s", contact: "Alejandro Navarro" };\n' "$UPLOAD_URL" > _site/config.js
+          printf 'window.STUDY_CONFIG = { uploadUrl: "%s", contact: "Alejandro Navarro (Anava044@ucr.edu)" };\n' "$UPLOAD_URL" > _site/config.js
           cat _site/config.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
