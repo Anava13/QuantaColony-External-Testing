@@ -171,3 +171,8 @@ ul.checks li.info { color: var(--ink); }
 ul.checks li.info .dot { width: 18px; flex: none; text-align: center; color: var(--muted); }
 .guide ul.tasks { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.4; }
 .guide .moving-on { color: var(--link); font-weight: 600; font-size: 13px; }
+/* sending the results */
+#send-progress { display: flex; flex-direction: column; gap: 8px; max-width: 520px; }
+.send-bar { height: 10px; border-radius: 5px; background: var(--rule); overflow: hidden; }
+#send-bar-fill { height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+.keep-open { margin: 4px 0 0; font-weight: 600; color: var(--ink); }

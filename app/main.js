@@ -548,29 +548,50 @@ async function reopenPlate(value) {
 }
 
 async function endStudy(complete) {
-  state.active = false;
-  show("screen-end");
+  show("screen-end");                                       // state.active stays on: leaving the page asks first
   $("end-title").textContent = "Sending your results…";
   $("end-text").textContent = "";
-  const result = await busyPage("Saving your results…", () => state.engine.call("results", complete));
+  $("send-progress").classList.remove("hidden");
+  sendProgress(0.05, "Packing your measurements…");
+  await new Promise(r => setTimeout(r, 30));                // let the page paint before Python runs
+  const result = state.engine.call("results", complete);
   state.result = result;
-  const sent = await upload(result).catch(() => false);
-  $("end-title").textContent = sent ? "Thank you" : "One more step";
+  sendProgress(0.15, "Uploading…");
+  const sent = await upload(result, f => sendProgress(0.15 + 0.85 * f, `Uploading… ${Math.round(100 * f)}%`))
+    .catch(() => false);
+  state.active = false;
+  $("send-progress").classList.add("hidden");
+  $("end-title").textContent = sent ? "Thank you!" : "One more step";
   $("end-text").textContent = sent
-    ? (complete ? "Every plate is measured, and your results were sent. You can close this tab."
-                : "The plates you finished were sent. You can close this tab.")
+    ? (complete ? "Your measurements arrived safely. Thank you for the time and care you gave these plates: "
+                  + "your results help show how consistently QuantaColony measures colonies from one person to the "
+                  + "next. You can close this tab now."
+                : "Thank you for your time. The plates you finished arrived safely, and they still help the study. "
+                  + "You can close this tab now.")
     : "Your results could not be sent automatically. Download the file below and email it to "
       + (CONFIG.contact || "the person who gave you the study") + ".";
   $("btn-download").classList.toggle("hidden", sent);
 }
 
-async function upload(result) {
-  if (!CONFIG.uploadUrl) return false;
-  const response = await fetch(CONFIG.uploadUrl, {
-    method: "POST", body: new Blob([result.bytes], { type: "application/zip" }),
-    headers: { "Content-Type": "application/zip", "X-File-Name": encodeURIComponent(result.name) },
+function sendProgress(fraction, text) {
+  $("send-bar-fill").style.width = `${Math.round(100 * Math.min(1, fraction))}%`;
+  $("send-step").textContent = text;
+}
+
+// The upload with progress (fetch reports none): onProgress gets the share of bytes sent.
+function upload(result, onProgress) {
+  return new Promise(resolve => {
+    if (!CONFIG.uploadUrl) { resolve(false); return; }
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", CONFIG.uploadUrl);
+    xhr.setRequestHeader("Content-Type", "application/zip");
+    xhr.setRequestHeader("X-File-Name", encodeURIComponent(result.name));
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => { onProgress(1); resolve(xhr.status >= 200 && xhr.status < 300); };
+    xhr.onerror = xhr.ontimeout = () => resolve(false);
+    xhr.timeout = 180000;
+    xhr.send(new Blob([result.bytes], { type: "application/zip" }));
   });
-  return response.ok;
 }
 
 function download() {

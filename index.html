@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QuantaColony study</title>
+<title>QuantaColony User Replicability Study</title>
 <link rel="icon" href="assets/favicon.svg">
 <link rel="stylesheet" href="app/style.css">
 <script src="config.js"></script>
@@ -11,7 +11,7 @@
 <body>
 <header id="bar">
   <img src="assets/logo.svg" alt="" class="logo">
-  <span class="wordmark">QuantaColony</span><span class="crumb">study</span>
+  <span class="wordmark">QuantaColony</span><span class="crumb">User Replicability Study</span>
   <span class="spacer"></span>
   <span id="plate-label" class="plate-label"></span>
   <span class="spacer"></span>
@@ -168,6 +168,11 @@
   <section id="screen-end" class="page hidden">
     <div class="column">
       <h1 id="end-title">Sending your results…</h1>
+      <div id="send-progress">
+        <div class="send-bar"><div id="send-bar-fill"></div></div>
+        <div id="send-step" class="small"></div>
+        <p class="keep-open">Please keep this page open until your results are sent.</p>
+      </div>
       <p id="end-text" class="lead"></p>
       <button id="btn-download" class="hidden">Download the results file</button>
     </div>
