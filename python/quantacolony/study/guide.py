@@ -182,14 +182,14 @@ STEPS = (
     GuideStep("manual", "Step 2 · Manual correction",
               "Automatic detection misses some colonies and outlines some things that are not colonies. The tools "
               "under Step 2 fix outlines one at a time or a box at a time. Each of the next steps uses one tool on a "
-              "part of the plate marked by four dots. " + TUNED_NOTE,
+              "part of the plate, marked by an arrow or by four dots. " + TUNED_NOTE,
               (Need("Open Step 2 · Manual correction on the left", "grp-manual", opened("grp-manual")),), tuned=True),
     GuideStep("delete", "Delete colonies",
-              "The mark between the dots is a plate number written in marker under the dish. Plate numbers, bubbles in the "
+              "The mark the arrow points to is a plate number written in marker under the dish. Plate numbers, bubbles in the "
               "agar (small rings) and dust are not colonies, so their outlines are deleted.",
               (Need("Choose Delete colonies", "mode-DeleteIndividualColonies",
                     lambda f: f.mode == "DeleteIndividualColonies" or f.deleted_one),
-               Need("Click each outline on the number between the dots (it turns red)", "plate",
+               Need("Click each outline on the number the arrow points to (it turns red)", "plate",
                     lambda f: f.selected_click or f.marker_clear),
                Need("Press Delete colonies", "btn-delete", lambda f: f.deleted_one and f.marker_clear)),
               ring="marker", tuned=True),
@@ -203,22 +203,22 @@ STEPS = (
                Need("Press Delete colonies", "btn-delete-region", lambda f: f.deleted_box and f.condensation_clear)),
               ring="condensation", tuned=True),
     GuideStep("add", "Add colonies",
-              "The colony between the dots is faint, so automatic detection misses it. Drag across a colony from one edge to "
+              "The colony the arrow points to is faint, so automatic detection misses it. Drag across a colony from one edge to "
               "the other; the drag is its diameter. A drawn circle (white, dashed) is not a colony yet and does not "
               "count. Add colonies turns drawn circles into colonies, outlined in lime. Circles never added are left "
               "out of the results; Finish image warns you about them.",
               (Need("Choose Add colonies", "mode-AddIndividualColonies",
                     lambda f: f.mode == "AddIndividualColonies" or f.added_one),
-               Need("Drag across the colony between the dots, edge to edge", "plate", lambda f: f.drew),
+               Need("Drag across the colony the arrow points to, edge to edge", "plate", lambda f: f.drew),
                Need("Press Add colonies: the circle turns lime and the count goes up", "btn-add",
                     lambda f: f.added_one and f.faint_added)), ring="faint", tuned=True),
     GuideStep("add_tools", "Snap and remove",
               "Snap to colony edge fits a drawn circle to the colony's own outline. It needs a clear edge, so it "
-              "works on dark colonies like the one between the dots. This one is larger than Max radius, so automatic "
+              "works on dark colonies like the one the arrow points to. This one is larger than Max radius, so automatic "
               "detection misses it. On a faint colony it finds no edge and leaves the circle "
               "as drawn; size that circle by hand. A right-click removes a drawn circle before it is added.",
               (Need("Turn on Snap to colony edge", "sw-contour", lambda f: f.contour_on or f.snapped),
-               Need("Drag across the colony between the dots: the circle snaps to its edge", "plate",
+               Need("Drag across the colony the arrow points to: the circle snaps to its edge", "plate",
                     lambda f: f.snapped or f.snap_added),
                Need("Right-click the circle to remove it", "plate", lambda f: f.removed_drawn or f.snap_added),
                Need("Drag across it again, then press Add colonies", "btn-add",
@@ -243,21 +243,22 @@ STEPS = (
     GuideStep("mass", "A mass of three",
               "Touching colonies are separate colonies, so a mass of three gets three outlines. One outline around the "
               "mass counts as one colony of the wrong size.",
-              (Need("Delete any outline that covers more than one of the three", "plate", lambda f: f.mass_unmerged),
+              (Need("Delete any outline that covers more than one of the three colonies the arrow points to", "plate", lambda f: f.mass_unmerged),
                Need("Draw and add one outline for each of the three", "plate", lambda f: f.mass_resolved)),
               ring="triple", tuned=True),
     GuideStep("skip", "A mass you cannot separate",
-              "The mass between the dots holds about seven colonies that cannot be told apart. Masses of five or more like this "
+              "The mass the arrow points to holds about seven colonies that cannot be told apart. Masses of five or more like this "
               "are skipped. One outline around such a mass counts as a wrong outline.",
-              (Need("Leave the mass between the dots without an outline (delete any outline on it)", "plate",
+              (Need("Leave the mass the arrow points to without an outline (delete any outline on it)", "plate",
                     lambda f: f.clump_unmerged),), ring="clump", tuned=True),
-    GuideStep("finish", "Finish the practice plate",
-              "Finish image checks your outlines against the plate's true colonies. Passing needs at least 90% of the "
-              "colonies you should measure, with at least 95% of your outlines correct. You can correct and check "
-              "again as often as you need.",
-              (Need("Outline every colony you can tell apart that still has none"),
-               Need("Delete outlines on anything that is not a colony"),
-               Need("Press Finish image and pass the check", "btn-finish", lambda f: f.saved))),
+    GuideStep("finish", "Measure the whole plate",
+              "Finish image compares your outlines with the plate's true colonies. To start the study, at least 90% "
+              "of the colonies you should measure need a correct outline, and at least 95% of your outlines need to "
+              "be correct. If the plate falls short, you see how far, and a few places to look again; then correct "
+              "it and press Finish image again.",
+              (Need("Look over the whole plate, using what you have learned, and correct what you find"),
+               Need("Press Finish image when you believe every outline is right", "btn-finish",
+                    lambda f: f.saved))),
 )
 
 # The instructions shown on every scored plate, as tasks.

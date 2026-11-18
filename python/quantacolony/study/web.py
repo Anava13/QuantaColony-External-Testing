@@ -411,8 +411,19 @@ class WebStudy:
                      compute_ms=round(self.session.last_compute_ms, 1), candidates=len(self.candidates))
         self._say("RegionCandidates", len(self.candidates))
 
+    def _adding_blocked(self) -> bool:
+        """The Snap step holds Add colonies until its right-click task is done, so a participant who adds the
+        snapped circle early does not lose the step."""
+        if not self._is_practice() or self.practice_done or gd.STEPS[self.step].key != "add_tools":
+            return False
+        events = self.recorder.log.events if self.recorder is not None else []
+        return not any(e.kind == "draw_removed" and e.data.get("how") == "right" for e in events)
+
     def add_pending(self) -> None:
         """Add colonies: the drawn circles, or the region's candidates (add_selected_colonies_button_pushed)."""
+        if self.mode != REGION_MODE and self._adding_blocked():
+            self.status = "Right-click the circle to remove it first; Add colonies comes after."
+            return
         if self.mode == REGION_MODE:
             new = self.candidates if self.candidates is not None else ColonySet.empty()
         else:
@@ -557,13 +568,11 @@ class WebStudy:
         if result.passed:
             self.feedback = None
             return summary
-        flags = {int(colonies.ids[k]): v for k, v in enumerate(result.verdicts) if v != "correct"}
-        missed = [[self.truth[i][0] - x0, self.truth[i][1] - y0, self.truth[i][2]] for i in result.missed]
-        problems = [[float(colonies.centers[k, 0]), float(colonies.centers[k, 1]), float(colonies.radii[k]),
-                     feedback_label(v)] for k, v in enumerate(result.verdicts) if v != "correct"]
-        problems += [[m[0], m[1], m[2], "a colony to measure that has no outline"] for m in missed]
-        self.feedback = {"flags": flags, "missed": missed}
-        return dict(summary, problems=problems)
+        wrong = [[float(colonies.centers[k, 0]), float(colonies.centers[k, 1]), float(colonies.radii[k]),
+                  feedback_label(v)] for k, v in enumerate(result.verdicts) if v != "correct"]
+        missed = [[self.truth[i][0] - x0, self.truth[i][1] - y0, self.truth[i][2], "a colony to measure that has no outline"]
+                  for i in result.missed]
+        return dict(summary, problems=few_problems(wrong, missed, self.attempts))
 
     def clear_feedback(self) -> None:
         """Clear problems: the check's marks leave the plate; the next Finish image checks again."""
@@ -671,6 +680,7 @@ class WebStudy:
         return {"done": False, "number": self.step + 1, "total": len(gd.STEPS), "key": step.key, "title": step.title,
                 "text": step.text, "bullets": bullets, "met": met, "anchor": pointing,
                 "hide_outlines": step.hide_outlines, "ring": self.ring(step.ring), "ring_name": step.ring,
+                "block_add": self._adding_blocked(),
                 "dots": self.corners(step.ring) if step.ring in BOX_MARKS else [],
                 "dots_capture": step.ring in BOX_MARKS,
                 "arrow": self.arrow_target(step.ring) if step.ring and step.ring not in BOX_MARKS else []}
@@ -731,6 +741,22 @@ def holds(box, points) -> bool:
     """True when the box (x0, y0, x1, y1, either corner order) holds every point."""
     x0, y0, x1, y1 = box
     return all(min(x0, x1) <= x <= max(x0, x1) and min(y0, y1) <= y <= max(y0, y1) for x, y in points)
+
+
+FEW_PROBLEMS = 3                   # places to look again after a failed check: a sample, never the full list
+
+
+def few_problems(wrong: list, missed: list, attempt: int) -> list:
+    """A few of the check's problems, alternating wrong outlines and missed colonies, a different sample
+    on each attempt. Nothing is drawn on the plate: the page only moves the view to each place."""
+    rng = np.random.default_rng(attempt)
+    pools = [list(rng.permutation(len(wrong))), list(rng.permutation(len(missed)))]
+    picked = []
+    while len(picked) < FEW_PROBLEMS and any(pools):
+        for source, pool in ((wrong, pools[0]), (missed, pools[1])):
+            if pool and len(picked) < FEW_PROBLEMS:
+                picked.append(source[int(pool.pop())])
+    return picked
 
 
 def feedback_label(verdict: str) -> str:

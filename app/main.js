@@ -154,6 +154,7 @@ function refresh() {
   if (!t.hide_outlines) $("count").textContent = v.count;
   $("count-detail").textContent = t.hide_outlines ? "" : `${v.count - v.added} automatic · ${v.added} added`;
   $("status").textContent = t.hide_outlines ? "" : v.status;
+  $("btn-add").disabled = !!t.block_add;                        // the Snap step: right-click first
   $("btn-undo").disabled = v.undo === 0;
   $("btn-redo").disabled = v.redo === 0;
   renderGuide();
@@ -339,7 +340,10 @@ function wireKeys() {
     if (!$("start-note").classList.contains("hidden")) return;
     if (e.key === "Escape") { act("clear"); return; }
     if ((e.key === "Delete" || e.key === "Backspace") && mode.startsWith("Delete")) { e.preventDefault(); act("delete_selected"); return; }
-    if (e.key === "Enter" && mode.startsWith("Add")) { e.preventDefault(); busy(() => act("add_pending")); }
+    if (e.key === "Enter" && mode.startsWith("Add")) {
+      e.preventDefault();
+      if (!(mode === "AddIndividualColonies" && state.guide && state.guide.block_add)) busy(() => act("add_pending"));
+    }
   });
   document.addEventListener("visibilitychange", () => { if (state.plate && state.active) state.engine.call("focus", !document.hidden); });
   window.addEventListener("beforeunload", e => { if (state.active) { e.preventDefault(); e.returnValue = ""; } });
@@ -428,47 +432,26 @@ function renderCheck(guide) {
   const pct = v => `${Math.round(100 * v)}%`;
   const box = document.createElement("div");
   box.className = "check";
-  box.innerHTML = `<h3></h3><ul class="shares"><li></li><li></li></ul><p class="small what"></p>
-    <p class="small marks-note">Orange outlines are wrong; magenta dashed circles are colonies to measure that have no
-    outline. The marks update when you press Finish image again.</p>
-    <div class="buttons"><button class="next-problem"></button><button class="clear-problems">Clear problems</button></div>`;
+  box.innerHTML = `<h3></h3><ul class="shares"><li></li><li></li></ul>
+    <p class="small">Here are a few places to look again; the rest of the plate is up to you. Correct it, then press
+    Finish image again.</p><button class="next-problem"></button>`;
   box.querySelector("h3").textContent = `Not passed yet (check ${c.attempt})`;
   const [a, b] = box.querySelectorAll(".shares li");
-  a.textContent = `Colonies found: ${c.found} of ${c.required} (${pct(c.found_share)}); needed ${pct(c.found_min)}`;
-  b.textContent = `Outlines correct: ${c.correct} of ${c.outlines} (${pct(c.correct_share)}); needed ${pct(c.correct_min)}`;
+  a.textContent = `Colonies found: ${pct(c.found_share)}; needed ${pct(c.found_min)}`;
+  b.textContent = `Outlines correct: ${pct(c.correct_share)}; needed ${pct(c.correct_min)}`;
   a.className = c.found_share >= c.found_min ? "ok" : "short";
   b.className = c.correct_share >= c.correct_min ? "ok" : "short";
-  const parts = [];
-  const names = { marker: "the plate number", bubble: "bubbles", condensation: "condensation", rim_shadow: "the dish edge's shadow",
-                  debris: "dust", agar: "bare agar" };
-  for (const [kind, n] of Object.entries(c.false)) if (n) parts.push(`${n} on ${names[kind] || kind}`);
-  if (c.merged) parts.push(`${c.merged} over several colonies`);
-  if (c.split) parts.push(`${c.split} on a colony that already has an outline`);
-  box.querySelector(".what").textContent = (parts.length ? `Wrong outlines: ${parts.join(", ")}. ` : "")
-    + (c.missed ? `Colonies with no outline: ${c.missed}.` : "");
   const next = box.querySelector(".next-problem");
   const problems = c.problems || [];
-  next.textContent = problems.length ? `Show the next problem (1 of ${problems.length})` : "No problems to show";
+  next.textContent = problems.length ? `Show a place to look again (1 of ${problems.length})` : "No places to show";
   next.disabled = !problems.length;
-  const clear = box.querySelector(".clear-problems");
-  if (c.cleared) {                                            // marks cleared: the numbers stay, the stepping goes
-    box.querySelector(".marks-note").textContent = "Marks cleared. Press Finish image to check again.";
-    next.remove();
-    clear.remove();
-  }
-  clear.onclick = () => {
-    c.cleared = true;
-    state.engine.call("clear_feedback");
-    $("status").textContent = "Problem marks cleared.";
-    refresh();
-  };
-  next.onclick = () => {
+  next.onclick = () => {                                     // moves the view there; nothing is drawn on the plate
     const k = state.problem = ((state.problem ?? -1) + 1) % problems.length;
     const [x, y, r, label] = problems[k];
     const view = state.plateView;
     view.centerOn(x, y, Math.max(3 * view.fitScale, Math.min(8 * view.fitScale, 60 / Math.max(r, 3))));
-    next.textContent = `Show the next problem (${(k + 1) % problems.length + 1} of ${problems.length})`;
-    $("status").textContent = `Problem ${k + 1} of ${problems.length}: ${label}.`;
+    next.textContent = `Show a place to look again (${(k + 1) % problems.length + 1} of ${problems.length})`;
+    $("status").textContent = `Place ${k + 1} of ${problems.length}, at the center of the view: ${label}.`;
   };
   guide.appendChild(box);
 }
