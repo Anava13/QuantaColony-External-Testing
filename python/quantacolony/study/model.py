@@ -101,6 +101,7 @@ class Bundle:
     plates: tuple[BundlePlate, ...]
     target: Target | None
     concepts: tuple[Concept, ...]
+    order: tuple = ()                             # the scored plates' fixed order (empty: a random order per participant)
     marks: dict = field(default_factory=dict)     # name -> Target: the places the guide rings on the practice
                                                   # plate (colony_ids empty for objects that are not colonies)
 
@@ -140,15 +141,15 @@ def load_bundle(folder: Path) -> Bundle:
     concepts = tuple(Concept(c["file"], c["title"], c["caption"]) for c in data.get("concepts", ()))
     marks = {name: Target(tuple(int(i) for i in m["colony_ids"]), tuple(map(float, m["center"])), float(m["radius"]))
              for name, m in data.get("marks", {}).items()}
-    return Bundle(Path(folder), int(data["version"]), plates, target, concepts, marks)
+    return Bundle(Path(folder), int(data["version"]), plates, target, concepts, tuple(data.get("order", ())), marks)
 
 
 def manifest(version: int, plates: list[BundlePlate], target: Target | None, concepts: list[Concept],
-             marks: dict | None = None) -> dict:
+             marks: dict | None = None, order=()) -> dict:
     """The manifest.json content for a bundle (written by tools/study/build_bundle.py)."""
     return {"version": version, "plates": [asdict(p) for p in plates],
             "target": asdict(target) if target else None, "concepts": [asdict(c) for c in concepts],
-            "marks": {name: asdict(m) for name, m in (marks or {}).items()}}
+            "marks": {name: asdict(m) for name, m in (marks or {}).items()}, "order": list(order)}
 
 
 # ======================================================================================
@@ -197,7 +198,7 @@ START_NOTE = (
     "Skip masses of five or more colonies that you cannot tell apart.",
     "Watch for false detections: delete any outline on something that is not a colony (plate numbers, bubbles, "
     "condensation, dust), or that covers more than one colony.",
-    "The three plates take about 15 minutes from here. Take the time to measure them carefully.",
+    "The four plates take about 15 minutes from here. Take the time to measure them carefully.",
 )
 
 STEPS = (
@@ -232,7 +233,7 @@ STEPS = (
          "Give each of the three colonies in the ring its own outline.", "ring",
          lambda f: f.target_resolved),
     Step("finish", "Finish the plate",
-         "Finish image saves the plate and opens the next one. After the practice plate, three plates follow. "
+         "Finish image saves the plate and opens the next one. After the practice plate, four plates follow, from easiest to hardest. "
          "Work on each until its outlines match its colonies, then press Finish image.",
          "Press Finish image to start the study.", "finish", lambda f: f.practice_saved),
 )

@@ -106,7 +106,7 @@ class WebStudy:
         problems = self.participant.problems()
         if problems:
             return {"ok": False, "problems": problems}
-        order = sm.presentation_order([p.name for p in self.bundle.scored], int(seed))
+        order = list(self.bundle.order) or sm.presentation_order([p.name for p in self.bundle.scored], int(seed))
         self.manager = sp.open_manager(sp.work_folder(self.work))
         sp.create_project(self.manager, self.bundle, self.participant, order, int(seed))
         self.order = order

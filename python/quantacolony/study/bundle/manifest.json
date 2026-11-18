@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "plates": [
     {
       "name": "practice",
@@ -10,17 +10,6 @@
         462.39666666666665,
         462.39666666666665,
         465.49999999999994
-      ]
-    },
-    {
-      "name": "study_03",
-      "file": "study_03.png",
-      "role": "scored",
-      "px_per_mm": 10.556642771246176,
-      "dish": [
-        456.43666666666667,
-        456.43666666666667,
-        459.5
       ]
     },
     {
@@ -35,10 +24,24 @@
       ]
     },
     {
+      "name": "study_05",
+      "file": "study_05.png",
+      "role": "scored",
+      "px_per_mm": 10.958424895719396,
+      "dish": null
+    },
+    {
+      "name": "study_03",
+      "file": "study_03.png",
+      "role": "scored",
+      "px_per_mm": 10.556642771246176,
+      "dish": null
+    },
+    {
       "name": "study_06",
       "file": "study_06.png",
       "role": "scored",
-      "px_per_mm": 10.835803960182872,
+      "px_per_mm": 11.237735419381684,
       "dish": null
     }
   ],
@@ -159,5 +162,11 @@
       ],
       "radius": 29.69557363432613
     }
-  }
+  },
+  "order": [
+    "study_04",
+    "study_05",
+    "study_03",
+    "study_06"
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "quantacolony_version": "0.2.0",
   "study_version": 1,
-  "bundle_version": 2,
+  "bundle_version": 3,
   "files": {
     "quantacolony/__init__.py": "2420288ecb0a80b41872d884d6f12820f2eecd496d96643c5094e28f055b95ac",
     "quantacolony/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -50,24 +50,25 @@
     "quantacolony/data/store/project_file.py": "0f3e0c546246afc175c401d6d1d06486d2aa9fff05ed98158bdedeab720a3933",
     "quantacolony/data/store/structure.py": "4eb306ea8a7e567b6815aff10f0f9b7c9915d1d2d4ea6b774144722607d31119",
     "quantacolony/data/tutorial_project.py": "c9fed6523c11b694379d94a2f6a6603bae0ef2b8711a5e4d44388bdfc33e7f20",
-    "quantacolony/study/__init__.py": "dfe8f45149ac0c0570afd814d9a1da9402cd31fac3954c71271e030e2157470d",
+    "quantacolony/study/__init__.py": "03f8412190c3fdde2f1853b0911dafe22d17c3e4f32e52df161440d4deae68c8",
     "quantacolony/study/bundle/concepts/clump.png": "8e8e3d12183ddfe1e3fb166e4509475b15311d80679f194aea17c79fccc5ba63",
     "quantacolony/study/bundle/concepts/edge.png": "9e7ce662c3b42224af095a41ca0b3be192181f75e190a2633deda9de0ac68ea5",
     "quantacolony/study/bundle/concepts/mass_three.png": "95f636fc16200cea6354709ca1bed5e0dbb882d0b85537d97cfd0913b8bbc450",
     "quantacolony/study/bundle/concepts/mass_two.png": "53adbc96daa65fe80bb441faf6d3d1d1b3bbc8535be94aedeaaec4f46e2b572a",
     "quantacolony/study/bundle/concepts/objects.png": "5041f6dcda69362358d089aaadb5d8cd7edd65db2af39eab86e62b6cc5529d09",
-    "quantacolony/study/bundle/manifest.json": "717fa52f5721613f0a22d9b412eeb774931918b4f665689c4995664a461bf98a",
+    "quantacolony/study/bundle/manifest.json": "99fb6c9d4a87b1f41306a9f283fece4ca3aa4bb3cc1a720de9829c843d9ae8d4",
     "quantacolony/study/bundle/photos/practice.png": "2d8827ded0e8645d79858a2ce2f2c57629d65dc3d22842404e4bb8f07c0d2f96",
-    "quantacolony/study/bundle/photos/study_03.png": "88394594b3a38f4dda0753ee83fe1830520a0c72b3bd8310f49c101720791f67",
+    "quantacolony/study/bundle/photos/study_03.png": "9120a3298916cedb73e01a6cab0a5e3640480043555429ba5ce8dc9300110dbe",
     "quantacolony/study/bundle/photos/study_04.png": "f252f5b33f7863593eef58571e32c74cad903030e5e47a9f36115a6416bce292",
-    "quantacolony/study/bundle/photos/study_06.png": "db8c53b27a879c625a15ffccd64fb42f4d40944789e2dece3b022c0d0ebf1418",
+    "quantacolony/study/bundle/photos/study_05.png": "7ded1a529d4a068d9e297cbfde629d530a8b2b0e7adadf1a70cca0ee8d761b23",
+    "quantacolony/study/bundle/photos/study_06.png": "28af110e28bed641183736dfe473e732d5dc5529e964a6777d372cb51b13f844",
     "quantacolony/study/bundle/practice_artifacts.png": "9bed13dae235d876552bba8c42df8304cdea7cb3d9214bce6a1a3fb630f9beb9",
     "quantacolony/study/bundle/practice_labels.png": "c597b1707f0318200ff532dd4e30bf521ebb6ab64d8e6396fcedacbdde6baa78",
     "quantacolony/study/bundle/practice_truth.csv": "5801417e6511cb04a82937373cb2e8ccc8c3ebc972845af523d86b525f9360e5",
     "quantacolony/study/guide.py": "9a410d6e567b2ed1a105ddc961841baf527fd0f1b718418f6d37c288ad72c1e2",
-    "quantacolony/study/model.py": "bbbc5e11eb95d1770cdec0b7d9b0371f23db5cde3e2c68c54b035ec1c94409ae",
+    "quantacolony/study/model.py": "816b4c76d3c932ba382561d50b8ab87e68540f2571c89798b9d0e658606a4ee2",
     "quantacolony/study/project.py": "6b3373e4c9668b38fc02c0fbe60bf0b63a5ff84375be9a80075af015a5305193",
     "quantacolony/study/score.py": "ee2023143f62c84d0b5b735cacef27e2bfb9a08ee782d32505e60086c3845359",
-    "quantacolony/study/web.py": "2b99bce3ee611750f4b2cb23dd55d577b03261f2a2f81154e8f1b02e0150c751"
+    "quantacolony/study/web.py": "b587951d72a83e431a6a636afa011b477db67369c786a06af2283fff93d6e1be"
   }
 }
