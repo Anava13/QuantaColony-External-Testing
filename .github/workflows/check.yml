@@ -1,0 +1,30 @@
+# Checks the live study by hand (Actions -> Check the live study -> Run workflow): the page and its
+# files load, and a small test zip goes through the upload service into the results repository
+# (results/<date>/...-CONNECTION_CHECK.zip, safe to delete).
+name: Check the live study
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: The page and its files
+        run: |
+          site="https://anava13.github.io/QuantaColony-External-Testing"
+          for path in "" config.js study.json python.zip app/main.js; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$site/$path")
+            echo "$code $site/$path"
+            [ "$code" = "200" ] || exit 1
+          done
+          curl -s "$site/config.js"
+      - name: A test upload
+        run: |
+          python3 -c "import zipfile; z = zipfile.ZipFile('check.zip', 'w'); z.writestr('participant.json', '{\"check\": true}'); z.close()"
+          url=$(curl -s "https://anava13.github.io/QuantaColony-External-Testing/config.js" | grep -o 'https://[^"]*/upload')
+          echo "Upload service: $url"
+          code=$(curl -s -o reply.json -w "%{http_code}" -X POST "$url" -H "Origin: https://anava13.github.io" \
+            -H "Content-Type: application/zip" -H "X-File-Name: CONNECTION_CHECK.zip" --data-binary @check.zip)
+          echo "$code $(cat reply.json)"
+          [ "$code" = "201" ]
