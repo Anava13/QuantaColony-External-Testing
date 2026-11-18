@@ -26,7 +26,7 @@
     "quantacolony/core/selection.py": "65f4f3f1efe985c4e6a95d40dc952fefaa3685e6b1f0e063e55c3489d9e325b5",
     "quantacolony/core/session.py": "563f17e942ebf4ad0154ec9ed733eb92d3e776b8c13305f2869e25306eb533ce",
     "quantacolony/core/stats.py": "09eb9fb60bf37f5c6aecf7ed39b11287694004103ca6f70f243012a86cfdffbd",
-    "quantacolony/core/tutorial.py": "359af4d9520f3dafc7bd4067107ac3bae2b174c0456b6531bb14736cec14dbc0",
+    "quantacolony/core/tutorial.py": "e7d6d352ce632337c551c997ba440a3ec408f72bafa2b77a775078e2db4045c6",
     "quantacolony/core/within_state.py": "162fe6f4ca0514eb355e3e2ce367dc4e4967b33fb7afddc281c4cff525c1b33b",
     "quantacolony/data/__init__.py": "4837dcb116abd60b3444510e6f5b89eba426a4a53aa0b8a0f539868b85f9d202",
     "quantacolony/data/codec.py": "187a549889b2c71f1c0de391668f14ecec82556a7fc8a5812a75ad64e62dc312",
@@ -65,10 +65,11 @@
     "quantacolony/study/bundle/practice_artifacts.png": "9bed13dae235d876552bba8c42df8304cdea7cb3d9214bce6a1a3fb630f9beb9",
     "quantacolony/study/bundle/practice_labels.png": "c597b1707f0318200ff532dd4e30bf521ebb6ab64d8e6396fcedacbdde6baa78",
     "quantacolony/study/bundle/practice_truth.csv": "5801417e6511cb04a82937373cb2e8ccc8c3ebc972845af523d86b525f9360e5",
-    "quantacolony/study/guide.py": "9a410d6e567b2ed1a105ddc961841baf527fd0f1b718418f6d37c288ad72c1e2",
+    "quantacolony/study/guide.py": "920945cb37012f556d6b9cd559aa9dfbfafd25b597c4a5f4319d244864f68dc2",
     "quantacolony/study/model.py": "816b4c76d3c932ba382561d50b8ab87e68540f2571c89798b9d0e658606a4ee2",
-    "quantacolony/study/project.py": "6b3373e4c9668b38fc02c0fbe60bf0b63a5ff84375be9a80075af015a5305193",
+    "quantacolony/study/practice.py": "08677c8b450aa50d039c60fbec7df1efef700c2ebe8c1bb127f1fe712a8d06d6",
+    "quantacolony/study/project.py": "97b4a34007aaecc037a17bcfa8a8ce85906d29d43019b058b544c90e7a7dc19a",
     "quantacolony/study/score.py": "ee2023143f62c84d0b5b735cacef27e2bfb9a08ee782d32505e60086c3845359",
-    "quantacolony/study/web.py": "b587951d72a83e431a6a636afa011b477db67369c786a06af2283fff93d6e1be"
+    "quantacolony/study/web.py": "94a4f831f39cc7b21634d3230b484b8305f0e6eb5895b562417ab92b6c95df45"
   }
 }

@@ -27,7 +27,7 @@ from ..core.params import new_project_detection
 from ..data import DataManager, Settings, create_library
 from ..data.packets import LevelSpec, VariableSpec
 from ..data.regions import crop_box, outline_from_geometry
-from .model import STUDY_VERSION, Bundle, BundlePlate, Participant, plate_levels
+from .model import PRACTICE, STUDY_VERSION, Bundle, BundlePlate, Participant, plate_levels
 
 VARIABLE = "plate"
 DISH_MM = 90.0                     # stored for completeness; every photo carries an imported scale
@@ -93,6 +93,28 @@ def create_project(manager: DataManager, bundle: Bundle, participant: Participan
         manager.commit_photo(photo_id, layout.to_dict(), [{VARIABLE: value}])
     manager.save_study_record(record)
     return record
+
+
+PRACTICE_PROJECT = "Colony Detection practice"
+PRACTICE_MARKER = {"name": "practice", "version": 1}
+
+
+def create_practice_project(manager: DataManager, bundle: Bundle, detection_start) -> str:
+    """The desktop Colony Detection tour's project: the practice plate alone, detection starting from
+    detection_start (the guide's poorly tuned settings), benchmark recording on (the tour reads its events).
+    Left open; returns its project id."""
+    variable = VariableSpec(VARIABLE, "nominal", (LevelSpec(PRACTICE, "Practice"),), "Plate")
+    info = manager.create_project(PRACTICE_PROJECT, [variable], detection_start,
+                                  plate={"type": "circular", "sections": 1, "dish_mm": DISH_MM},
+                                  extra={"tutorial": dict(PRACTICE_MARKER)}, record_benchmark=True)
+    manager.set_new_image_start("last image")
+    plate = bundle.practice
+    photo_id = manager.add_photo(bundle.photo_path(plate), plate.px_per_mm, file_name=plate.file,
+                                 scaling_method="study bundle")
+    shape = next(p for p in manager.crop_packet().photos if p.photo_id == photo_id)
+    layout = plate_layout(plate, (shape.height, shape.width))
+    manager.commit_photo(photo_id, layout.to_dict(), [{VARIABLE: PRACTICE}])
+    return info.project_id
 
 
 def stamp(manager: DataManager, stage: str, **extra) -> dict:

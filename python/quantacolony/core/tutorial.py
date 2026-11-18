@@ -1073,9 +1073,29 @@ def _with_reasons(project: str, steps: tuple) -> tuple:
 
 
 def _guide_steps() -> tuple:
-    """Getting started: every Crowding step, read as a lesson in using QuantaColony (no figure labels)."""
+    """Getting started: the Crowding steps, read as a lesson in using QuantaColony (no figure labels). Colony
+    Detection is taught by its own tour on a practice plate (gui/detection_guide.py), so this tour points there."""
     import dataclasses
-    return tuple(dataclasses.replace(step, figure="") for step in _with_reasons("crowding", _crowding_steps()))
+    detection = Step("detection", "Colony Detection", "Colony Detection has its own tour",
+                     "The Colony Detection tour teaches detection on a practice plate built for it: automatic "
+                     "detection one setting at a time, then each manual tool, then a check of the whole plate "
+                     "against its true colonies.",
+                     finding="Start it from Start tutorial on the home page: Learn QuantaColony, Colony Detection. "
+                             "This tour goes on with Stats.")
+    steps = []
+    for step in _with_reasons("crowding", _crowding_steps()):
+        if step.key in ("sparse", "crowded"):
+            if step.key == "sparse":
+                steps.append(detection)
+            continue
+        steps.append(dataclasses.replace(step, figure=""))
+    return tuple(steps)
+
+
+def _detection_steps() -> tuple:
+    """The Colony Detection tour's steps, for the tour picker (the tour itself runs study/guide.py STEPS)."""
+    from ..study.guide import STEPS as GUIDE
+    return tuple(Step(s.key, "Colony Detection", s.title, s.text) for s in GUIDE)
 
 
 def _crowding_figure_steps() -> tuple:
@@ -1088,6 +1108,9 @@ def _crowding_figure_steps() -> tuple:
 
 
 TOURS: tuple[Tour, ...] = (
+    Tour("detection", "Colony Detection", "Automatic detection one setting at a time, then each manual tool, on a "
+         "practice plate whose true colonies are known. Ends with a check of the whole plate.", "practice",
+         _detection_steps(), kind="guide"),
     Tour("crowding", "Getting started", "One wild-type dilution series, from cropping and colony detection to "
          "the Stats figures. Covers the dish scale, touching colonies, the capture ratio and measurement "
          "fidelity.", "crowding", _guide_steps(), kind="guide"),
@@ -1100,7 +1123,7 @@ TOURS: tuple[Tour, ...] = (
     Tour("historical", "The historical est plates", "The est mutant papers: figures 8.7, 10.6, 10.9 and "
          "table 10.3.", "historical", _with_reasons("historical", _historical_steps())),
 )
-STEPS = TOURS[0].steps                            # the Crowding tour's steps
+STEPS = TOURS[1].steps                            # the Crowding tour's steps
 
 
 def step_index(key: str) -> int:
@@ -1108,4 +1131,4 @@ def step_index(key: str) -> int:
 
 
 def tour(key: str) -> Tour:
-    return next((t for t in TOURS if t.key == key), TOURS[0])
+    return next((t for t in TOURS if t.key == key), next(t for t in TOURS if t.key == "crowding"))

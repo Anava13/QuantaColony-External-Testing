@@ -123,8 +123,16 @@ class GuideStep:
         return all(n.met(facts) for n in self.needs)
 
 
-def opened(section: str):
-    return lambda f: section in f.open
+class opened:
+    """The check of a task that opens a collapsed section of the browser study's page. The desktop program has
+    no collapsed sections, so its tour leaves these tasks out (web_only)."""
+    web_only = True
+
+    def __init__(self, section: str):
+        self.section = section
+
+    def __call__(self, f) -> bool:
+        return self.section in f.open
 
 
 TUNED_NOTE = "If you change a Step 1 setting later, the guide asks you to set it back before you go on."
