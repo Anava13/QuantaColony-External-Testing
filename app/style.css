@@ -170,3 +170,4 @@ ul.checks li.restore { color: var(--danger-text); font-weight: 600; }
 ul.checks li.info { color: var(--ink); }
 ul.checks li.info .dot { width: 18px; flex: none; text-align: center; color: var(--muted); }
 .guide ul.tasks { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.4; }
+.guide .moving-on { color: var(--link); font-weight: 600; font-size: 13px; }

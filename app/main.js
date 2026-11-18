@@ -11,6 +11,7 @@ const CONFIG = window.STUDY_CONFIG || {};
 const $ = id => document.getElementById(id);
 const SETTLE_MS = 300;           // settings: detect once the control has been still this long
 const POINTER_MS = 2000;
+const ADVANCE_MS = 1200;         // a finished step stays this long, so its checkmarks are seen, then moves on
 const EDGE_PX = 6;               // screen pixels around a drawn circle's edge that count as the edge
 const PANELS = { ModifyGlobalParameters: "panel-settings", DeleteIndividualColonies: "panel-delete",
                  DeleteManyColonies: "panel-delete-region", AddIndividualColonies: "panel-add",
@@ -391,8 +392,25 @@ function renderGuide() {
     el.onclick = handler;
     buttons.appendChild(el);
   };
-  if (t.key !== "finish") button("Next", "primary", () => act("pass_step", openSections()), !t.met);
-  if (!t.met && t.key !== "finish" && t.bullets.length) button("Skip this step", "link", () => act("skip_step"));
+  // A step with tasks moves on by itself once every task is checked; a step without tasks has Next.
+  const tracked = t.bullets.some(b => !b.info);
+  if (!tracked) button("Next", "primary", () => act("pass_step", openSections()));
+  if (tracked && t.met && t.key !== "finish") {
+    const note = document.createElement("span");
+    note.className = "moving-on";
+    note.textContent = "Done. Moving on…";
+    buttons.appendChild(note);
+    if (state.advancing !== t.key) {
+      state.advancing = t.key;
+      setTimeout(() => {
+        state.advancing = null;
+        if (state.guide && state.guide.key === t.key) {
+          act("pass_step", openSections());
+          if (state.guide.key !== t.key) (state.passedKeys = state.passedKeys || []).push(t.key);
+        }
+      }, ADVANCE_MS);
+    }
+  }
   point(t.anchor);
   if (t.ring && t.ring.length && state.zoomedTo !== t.key) {   // bring the step's ringed part into view once
     state.zoomedTo = t.key;

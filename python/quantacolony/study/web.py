@@ -675,13 +675,15 @@ class WebStudy:
                 "dots_capture": step.ring in ("bright", "condensation")}
 
     def pass_step(self, open_sections=()) -> None:
-        """Next: only once every bullet of the step is checked."""
+        """The next step, only once every bullet of this one is checked (the page calls it by itself
+        when a step with tasks is met, and from Next on a step without tasks)."""
         step = gd.STEPS[self.step]
         if step.met(self._guide_facts(open_sections)) and self.step < len(gd.STEPS) - 1:
             self.step += 1
 
     def skip_step(self) -> None:
-        """Skip a step without meeting it (recorded); the last step (Finish image) cannot be skipped."""
+        """Skip a step without meeting it (recorded); the last step (Finish image) cannot be skipped.
+        The page offers no skip: participants do every step. Kept for automated checks."""
         if self.step < len(gd.STEPS) - 1:
             self.skipped.append(gd.STEPS[self.step].key)
             self.step += 1
