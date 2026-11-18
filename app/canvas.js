@@ -155,6 +155,7 @@ export class PlateView {
     }
     if (this.drag) this.box(this.drag.x0, this.drag.y0, this.drag.x1, this.drag.y1, this.drag.color);
     this.drawDots();
+    this.drawArrow();
     if (this.ring) {
       const [x, y, r] = this.ring;
       ctx.beginPath();
@@ -221,6 +222,33 @@ export class PlateView {
       ctx.strokeStyle = "#FFFFFF";
       ctx.stroke();
     }
+  }
+
+  // A single target (one colony, one mark): a magenta arrow with a white border, pointing at the target's
+  // edge from its upper left. Sized in screen pixels, so it reads the same at any zoom.
+  drawArrow() {
+    if (!this.arrow || !this.arrow.length) return;
+    const [cx, cy, r] = this.arrow, s = this.scale, ctx = this.ctx;
+    const ux = Math.SQRT1_2, uy = Math.SQRT1_2;                     // pointing down and to the right
+    const tipX = cx + 0.5 - ux * (r + 2 / s), tipY = cy + 0.5 - uy * (r + 2 / s);
+    const len = 95 / s, head = 34 / s, half = 19 / s, shaft = 7 / s;
+    const bx = tipX - ux * head, by = tipY - uy * head;              // base of the head
+    const px = -uy, py = ux;                                         // across the arrow
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(bx + px * half, by + py * half);
+    ctx.lineTo(bx + px * shaft, by + py * shaft);
+    ctx.lineTo(tipX - ux * len + px * shaft, tipY - uy * len + py * shaft);
+    ctx.lineTo(tipX - ux * len - px * shaft, tipY - uy * len - py * shaft);
+    ctx.lineTo(bx - px * shaft, by - py * shaft);
+    ctx.lineTo(bx - px * half, by - py * half);
+    ctx.closePath();
+    ctx.fillStyle = COLORS.dot;
+    ctx.fill();
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 3 / s;
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.stroke();
   }
 
   box(x0, y0, x1, y1, color) {

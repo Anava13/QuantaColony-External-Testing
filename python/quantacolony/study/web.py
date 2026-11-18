@@ -621,9 +621,9 @@ class WebStudy:
         return out
 
     def corners(self, name: str) -> list:
-        """The four corner dots framing a bundle mark, [x, y] in crop pixels: for 'bright', the box holding
-        its pale colonies; for 'condensation', the box holding the droplets; otherwise the square around
-        the mark's circle."""
+        """The four corner dots of the box a step asks for, [x, y] in crop pixels: for 'bright', the box
+        holding its pale colonies; for 'condensation', the box holding the droplets; otherwise the square
+        around the mark's circle."""
         mark = self.bundle.marks.get(name)
         if mark is None or not self._is_practice():
             return []
@@ -671,8 +671,9 @@ class WebStudy:
         return {"done": False, "number": self.step + 1, "total": len(gd.STEPS), "key": step.key, "title": step.title,
                 "text": step.text, "bullets": bullets, "met": met, "anchor": pointing,
                 "hide_outlines": step.hide_outlines, "ring": self.ring(step.ring), "ring_name": step.ring,
-                "dots": self.corners(step.ring) if step.ring else [],
-                "dots_capture": step.ring in ("bright", "condensation")}
+                "dots": self.corners(step.ring) if step.ring in BOX_MARKS else [],
+                "dots_capture": step.ring in BOX_MARKS,
+                "arrow": self.arrow_target(step.ring) if step.ring and step.ring not in BOX_MARKS else []}
 
     def pass_step(self, open_sections=()) -> None:
         """The next step, only once every bullet of this one is checked (the page calls it by itself
@@ -696,6 +697,14 @@ class WebStudy:
         x0, y0 = sp.crop_offset(self.bundle.practice, self.labels.shape)
         return [mark.center[0] - x0, mark.center[1] - y0, mark.radius]
 
+    def arrow_target(self, name: str) -> list:
+        """[cx, cy, r] the step's arrow points at: the mark's circle, drawn tighter around a written number
+        (whose circle holds the whole digit and the space beside it)."""
+        ring = self.ring(name)
+        if ring and name == "marker":
+            ring[2] *= 0.55
+        return ring
+
     def target_ring(self) -> list:
         return self.ring("triple")
 
@@ -715,6 +724,7 @@ def describe_specs() -> str:
 
 
 BOX_MARGIN = 10                    # pixels between a marked box's contents and its corner dots
+BOX_MARKS = ("bright", "condensation")   # steps that ask for a box: corner dots; other marks get an arrow
 
 
 def holds(box, points) -> bool:

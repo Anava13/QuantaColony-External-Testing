@@ -131,6 +131,7 @@ function refresh() {
   state.plateView.ring = null;                                   // the step's part of the plate: four corner dots
   state.plateView.dots = !t.done && t.dots ? t.dots : [];
   state.plateView.dotsCapture = !t.done && !!t.dots_capture;
+  state.plateView.arrow = !t.done && t.arrow ? t.arrow : [];
   state.plateView.draw();
   const p = state.plate;
   $("plate-label").textContent = p.practice ? "Practice plate"
